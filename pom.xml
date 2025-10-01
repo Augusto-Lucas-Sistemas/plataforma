@@ -29,14 +29,16 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.11.0</version> <configuration>
-                    <annotationProcessorPaths>
+                    <version>3.11.0</version>
+                    <configuration>
+                        <parameters>true</parameters> <annotationProcessorPaths>
                         <path>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
-                            <version>1.18.32</version> </path>
+                            <version>1.18.32</version>
+                        </path>
                     </annotationProcessorPaths>
-                </configuration>
+                    </configuration>
                 </plugin>
                 <plugin>
                     <groupId>org.springframework.boot</groupId>
@@ -63,7 +65,13 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+            <dependency>
+                <groupId>net.logstash.logback</groupId>
+                <artifactId>logstash-logback-encoder</artifactId>
+                <version>7.4</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
+
 
 </project>
