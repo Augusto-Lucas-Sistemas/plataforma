@@ -53,33 +53,33 @@ graph TD
             DB_M1[(DB do Módulo 1)]
             DB_M2[(DB do Módulo 2)]
         end
-
-        %% As conexões devem ser definidas dentro do escopo principal do subgraph
-        U -- HTTPS --> G
-
-        G --> AS
-        G --> TS
-        G --> M1
-        G --> M2
-        G --> M3
-
-        AS -- "Valida permissões" --> TS
-        M1 -- "Consulta dados do Tenant" --> TS
-
-        TS --> DB_TS
-        M1 --> DB_M1
-        M2 --> DB_M2
-
-        AS -- "Registra-se em" --> DS
-        TS -- "Registra-se em" --> DS
-        M1 -- "Registra-se em" --> DS
-        G -- "Descobre serviços em" --> DS
-
-        AS -- "Busca configurações de" --> CS
-        TS -- "Busca configurações de" --> CS
-        M1 -- "Busca configurações de" --> CS
-        G -- "Busca configurações de" --> CS
     end
+
+    %% Definindo TODAS as conexões no escopo principal, após os subgraphs
+    U -- HTTPS --> G
+
+    G --> AS
+    G --> TS
+    G --> M1
+    G --> M2
+    G --> M3
+
+    AS -- "Valida permissões" --> TS
+    M1 -- "Consulta dados do Tenant" --> TS
+
+    TS --> DB_TS
+    M1 --> DB_M1
+    M2 --> DB_M2
+
+    AS -- "Registra-se em" --> DS
+    TS -- "Registra-se em" --> DS
+    M1 -- "Registra-se em" --> DS
+    G -- "Descobre serviços em" --> DS
+
+    AS -- "Busca configurações de" --> CS
+    TS -- "Busca configurações de" --> CS
+    M1 -- "Busca configurações de" --> CS
+    G -- "Busca configurações de" --> CS
 ```
 
 ## 3\. Estrutura de Módulos e Serviços
