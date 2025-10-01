@@ -25,9 +25,7 @@ O diagrama abaixo ilustra a visão de alto nível dos principais serviços e com
 
 ```mermaid
 graph TD
-    subgraph Cliente
-        U[Usuario Final (Navegador)]
-    end
+    U[Usuario Final (Navegador)]
 
     subgraph "Plataforma SaaS (Docker)"
         G[API Gateway]
@@ -79,7 +77,6 @@ graph TD
     TS -->|Busca configuracoes de| CS
     M1 -->|Busca configuracoes de| CS
     G -->|Busca configuracoes de| CS
-
 ```
 
 ## 3\. Estrutura de Módulos e Serviços
