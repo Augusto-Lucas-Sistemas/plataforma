@@ -25,34 +25,31 @@ O diagrama abaixo ilustra a visão de alto nível dos principais serviços e com
 
 ```mermaid
 graph TD
+    %% Nó inicial (Cliente)
     U[Usuario Final (Navegador)]
 
-    subgraph "Plataforma SaaS (Docker)"
-        G[API Gateway]
+    %% Plataforma SaaS
+    G[API Gateway]
 
-        subgraph "Servicos de Core"
-            AS[Auth Service]
-            TS[Tenant Service]
-        end
+    %% Serviços de Core
+    AS[Auth Service]
+    TS[Tenant Service]
 
-        subgraph "Modulos de Negocio"
-            M1[Modulo Oficina]
-            M2[Modulo Consultorio]
-            M3[...]
-        end
+    %% Módulos de Negocio
+    M1[Modulo Oficina]
+    M2[Modulo Consultorio]
+    M3[...]
 
-        subgraph "Servicos de Infraestrutura"
-            DS[Discovery Server]
-            CS[Config Server]
-        end
+    %% Servicos de Infraestrutura
+    DS[Discovery Server]
+    CS[Config Server]
 
-        subgraph "Bancos de Dados"
-            DB_TS[(MongoDB - Tenants)]
-            DB_M1[(DB do Modulo 1)]
-            DB_M2[(DB do Modulo 2)]
-        end
-    end
+    %% Bancos de Dados
+    DB_TS[(MongoDB - Tenants)]
+    DB_M1[(DB do Modulo 1)]
+    DB_M2[(DB do Modulo 2)]
 
+    %% Conexões
     U -->|HTTPS| G
 
     G --> AS
@@ -77,6 +74,7 @@ graph TD
     TS -->|Busca configuracoes de| CS
     M1 -->|Busca configuracoes de| CS
     G -->|Busca configuracoes de| CS
+
 ```
 
 ## 3\. Estrutura de Módulos e Serviços
