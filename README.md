@@ -25,56 +25,61 @@ O diagrama abaixo ilustra a visão de alto nível dos principais serviços e com
 
 ```mermaid
 graph TD
-    %% Nó inicial (Cliente)
-    U[Usuario Final (Navegador)]
+    subgraph "Cliente"
+        U[Usuário Final (Navegador)]
+    end
 
-    %% Plataforma SaaS
-    G[API Gateway]
+    subgraph "Plataforma SaaS (Docker)"
+        G[API Gateway]
 
-    %% Serviços de Core
-    AS[Auth Service]
-    TS[Tenant Service]
+        subgraph "Serviços de Core"
+            AS[Auth Service]
+            TS[Tenant Service]
+        end
 
-    %% Módulos de Negocio
-    M1[Modulo Oficina]
-    M2[Modulo Consultorio]
-    M3[...]
+        subgraph "Módulos de Negócio"
+            M1[Módulo Oficina]
+            M2[Módulo Consultório]
+            M3[...]
+        end
 
-    %% Servicos de Infraestrutura
-    DS[Discovery Server]
-    CS[Config Server]
+        subgraph "Serviços de Infraestrutura"
+            DS[Discovery Server]
+            CS[Config Server]
+        end
 
-    %% Bancos de Dados
-    DB_TS[(MongoDB - Tenants)]
-    DB_M1[(DB do Modulo 1)]
-    DB_M2[(DB do Modulo 2)]
+        subgraph "Bancos de Dados"
+            DB_TS[(MongoDB - Tenants)]
+            DB_M1[(DB do Módulo 1)]
+            DB_M2[(DB do Módulo 2)]
+        end
 
-    %% Conexões
-    U -->|HTTPS| G
+        %% As conexões devem ser definidas dentro do escopo principal do subgraph
+        U -- HTTPS --> G
 
-    G --> AS
-    G --> TS
-    G --> M1
-    G --> M2
-    G --> M3
+        G --> AS
+        G --> TS
+        G --> M1
+        G --> M2
+        G --> M3
 
-    AS -->|Valida permissoes| TS
-    M1 -->|Consulta dados do Tenant| TS
+        AS -- "Valida permissões" --> TS
+        M1 -- "Consulta dados do Tenant" --> TS
 
-    TS --> DB_TS
-    M1 --> DB_M1
-    M2 --> DB_M2
+        TS --> DB_TS
+        M1 --> DB_M1
+        M2 --> DB_M2
 
-    AS -->|Registra-se em| DS
-    TS -->|Registra-se em| DS
-    M1 -->|Registra-se em| DS
-    G -->|Descobre servicos em| DS
+        AS -- "Registra-se em" --> DS
+        TS -- "Registra-se em" --> DS
+        M1 -- "Registra-se em" --> DS
+        G -- "Descobre serviços em" --> DS
 
-    AS -->|Busca configuracoes de| CS
-    TS -->|Busca configuracoes de| CS
-    M1 -->|Busca configuracoes de| CS
-    G -->|Busca configuracoes de| CS
-
+        AS -- "Busca configurações de" --> CS
+        TS -- "Busca configurações de" --> CS
+        M1 -- "Busca configurações de" --> CS
+        G -- "Busca configurações de" --> CS
+    end
 ```
 
 ## 3\. Estrutura de Módulos e Serviços
