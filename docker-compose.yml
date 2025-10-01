@@ -1,0 +1,34 @@
+version: '3.8' # Pode remover esta linha se quiser, ela é opcional nas versões mais novas
+
+services:
+  # Serviço 1: O Banco de Dados MongoDB com Healthcheck
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    healthcheck: # <-- ADICIONE ESTE BLOCO
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # Serviço 2: Nosso Tenant Service, agora esperando pelo healthcheck
+  tenantservice:
+    build:
+      context: .
+      dockerfile: ./core/tenant-service/Dockerfile
+    container_name: tenantservice
+    ports:
+      - "8081:8081"
+    depends_on:
+      mongodb: # <-- ALTERE AQUI
+        condition: service_healthy
+    environment:
+      - SPRING_DATA_MONGODB_URI=mongodb://mongodb:27017/plataforma_db
+
+volumes:
+  mongo-data:
