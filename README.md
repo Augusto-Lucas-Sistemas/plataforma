@@ -25,37 +25,37 @@ O diagrama abaixo ilustra a visão de alto nível dos principais serviços e com
 
 ```mermaid
 graph TD
-    subgraph "Cliente"
-        U[Usuário Final (Navegador)]
+    subgraph Cliente
+        U["Usuario Final (Navegador)"]
     end
 
-    subgraph "Plataforma SaaS (Docker)"
-        G[API Gateway]
+    subgraph Plataforma_SaaS_Docker
+        G["API Gateway"]
 
-        subgraph "Serviços de Core"
-            AS[Auth Service]
-            TS[Tenant Service]
+        subgraph Servicos_de_Core
+            AS["Auth Service"]
+            TS["Tenant Service"]
         end
 
-        subgraph "Módulos de Negócio"
-            M1[Módulo Oficina]
-            M2[Módulo Consultório]
-            M3[...]
+        subgraph Modulos_de_Negocio
+            M1["Modulo Oficina"]
+            M2["Modulo Consultorio"]
+            M3["..."]
         end
 
-        subgraph "Serviços de Infraestrutura"
-            DS[Discovery Server]
-            CS[Config Server]
+        subgraph Servicos_de_Infraestrutura
+            DS["Discovery Server"]
+            CS["Config Server"]
         end
 
-        subgraph "Bancos de Dados"
-            DB_TS[(MongoDB - Tenants)]
-            DB_M1[(DB do Módulo 1)]
-            DB_M2[(DB do Módulo 2)]
+        subgraph Bancos_de_Dados
+            DB_TS["MongoDB - Tenants"]
+            DB_M1["DB do Modulo 1"]
+            DB_M2["DB do Modulo 2"]
         end
     end
 
-    %% Definindo TODAS as conexões no escopo principal, após os subgraphs
+    %% Conexoes
     U -- HTTPS --> G
 
     G --> AS
@@ -64,7 +64,7 @@ graph TD
     G --> M2
     G --> M3
 
-    AS -- "Valida permissões" --> TS
+    AS -- "Valida permissoes" --> TS
     M1 -- "Consulta dados do Tenant" --> TS
 
     TS --> DB_TS
@@ -74,12 +74,12 @@ graph TD
     AS -- "Registra-se em" --> DS
     TS -- "Registra-se em" --> DS
     M1 -- "Registra-se em" --> DS
-    G -- "Descobre serviços em" --> DS
+    G -- "Descobre servicos em" --> DS
 
-    AS -- "Busca configurações de" --> CS
-    TS -- "Busca configurações de" --> CS
-    M1 -- "Busca configurações de" --> CS
-    G -- "Busca configurações de" --> CS
+    AS -- "Busca configuracoes de" --> CS
+    TS -- "Busca configuracoes de" --> CS
+    M1 -- "Busca configuracoes de" --> CS
+    G -- "Busca configuracoes de" --> CS
 ```
 
 ## 3\. Estrutura de Módulos e Serviços
