@@ -120,7 +120,7 @@ Para garantir consistência, manutenibilidade e baixo acoplamento, todos os serv
 
 Isso significa que o núcleo de cada serviço (contendo a lógica de negócio) é completamente isolado de tecnologias externas. A comunicação com o mundo (APIs REST, bancos de dados, filas de mensagens) é feita através de "Portas" (interfaces) e "Adaptadores" (implementações).
 
-Para um mergulho profundo nesta arquitetura, consulte o `README.md` de cada serviço individual (ex: [`core/tenant-service/README.md`](https://www.google.com/search?q=./core/tenant-service/README.md)).
+Para um mergulho profundo nesta arquitetura, consulte o `README.md` de cada serviço individual (ex: [`core/tenant-service/README.md`](https://www.google.com/search?q=%5Bhttps://www.google.com/search%3Fq%3D./core/tenant-service/README.md%5D\(https://www.google.com/search%3Fq%3D./core/tenant-service/README.md\))).
 
 ## 5\. Ambiente de Desenvolvimento com Docker
 
@@ -151,11 +151,11 @@ Toda a plataforma é orquestrada com Docker e Docker Compose para garantir um am
 
 Após a execução, os principais pontos de acesso estarão disponíveis em `localhost`:
 
-| Serviço | URL de Acesso | Coleção do Postman |
-| :--- | :--- |:--- |
-| **API Gateway** | `http://localhost:8080` | (a ser criada) |
-| **Tenant Service** | `http://localhost:8081` | [`core/tenant-service/tenant-service-collection.json`](https://www.google.com/search?q=./core/tenant-service/tenant-service-collection.json) |
-| **Discovery Server** | `http://localhost:8761` | N/A |
+| Serviço | URL de Acesso |
+| :--- | :--- |
+| **API Gateway** | `http://localhost:8080` |
+| **Tenant Service (direto)** | `http://localhost:8081` |
+| **Discovery Server** | `http://localhost:8761` |
 
 ## 6\. Documentação
 
@@ -168,11 +168,16 @@ Cada microserviço que expõe uma API REST gera automaticamente sua própria doc
 
 A interface do Swagger UI é a maneira recomendada para explorar e testar os endpoints de cada API individualmente.
 
-### 6.2. Coleções de Teste (Postman)
+### 6.2. Coleção de Testes (Postman/Insomnia)
 
-Para facilitar os testes e a exploração das APIs, cada microserviço contém sua própria coleção do Postman. O arquivo de importação pode ser encontrado na raiz de cada módulo e segue o padrão de nomenclatura: `[nome-do-servico]-collection.json`.
+Para centralizar e simplificar os testes de integração, o projeto utiliza uma **única coleção geral** que abrange todos os endpoints da plataforma.
 
-Estas coleções já vêm com variáveis de ambiente (como `baseUrl`) e exemplos de requisições.
+- **Localização:** O arquivo `postman_collection.json` se encontra na raiz do projeto.
+- **Estrutura:** Dentro da coleção, as requisições estão organizadas em pastas que espelham a arquitetura dos serviços (`core`, `modules`, etc.), facilitando a localização dos endpoints desejados.
+
+Para utilizar, basta importar o arquivo no seu cliente de API preferido (Postman, Insomnia, etc.).
+
+> **Nota:** Ao adicionar ou modificar endpoints, lembre-se de atualizar esta coleção central para manter a documentação e os testes consistentes para toda a equipe.
 
 ## 7\. Próximos Passos e Contribuição
 

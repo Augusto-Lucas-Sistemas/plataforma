@@ -1,0 +1,162 @@
+{
+	"info": {
+		"_postman_id": "7bf94d10-6d3e-4558-a971-aa83969e141c",
+		"name": "Plataforma Multimodular",
+		"description": "Coleção de testes para a plataforma multimodular, incluindo todos os seus microservices.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "7592330",
+		"_collection_link": "https://augusto-lucas-sistemas.postman.co/workspace/Augusto-%26-Lucas-Sistemas-Worksp~4718219c-e3cd-460e-a9f8-05b2df9083d1/collection/7592330-7bf94d10-6d3e-4558-a971-aa83969e141c?action=share&source=collection_link&creator=7592330"
+	},
+	"item": [
+		{
+			"name": "Tenant Service",
+			"item": [
+				{
+					"name": "Criar Novo Tenant",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Clínica Vet Mais Vida\",\n    \"subscribedModules\": [\n        \"mod-agendamento\",\n        \"mod-pets\"\n    ]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/tenants",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"tenants"
+							]
+						},
+						"description": "Cria um novo tenant na plataforma. O status será definido como `ACTIVE` por padrão e as datas de criação/atualização serão geradas automaticamente."
+					},
+					"response": []
+				},
+				{
+					"name": "Listar Todos os Tenants",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/tenants",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"tenants"
+							]
+						},
+						"description": "Retorna uma lista com todos os tenants cadastrados no sistema."
+					},
+					"response": []
+				},
+				{
+					"name": "Buscar Tenant por ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/tenants/{{tenantId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"tenants",
+								"{{tenantId}}"
+							],
+							"variable": [
+								{
+									"key": "tenantId",
+									"value": "COPIE_UM_ID_VALIDO_AQUI"
+								}
+							]
+						},
+						"description": "Busca um tenant específico pelo seu ID.\n\n**Como usar:**\n1. Crie ou liste os tenants para obter um `id` válido.\n2. Vá para a aba `Variables` desta requisição (ou da pasta/coleção).\n3. Altere o valor da variável `tenantId` para o ID desejado."
+					},
+					"response": []
+				},
+				{
+					"name": "Adicionar Módulo a um Tenant",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"moduleName\": \"mod-estoque\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/tenants/{{tenantId}}/modules",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"tenants",
+								"{{tenantId}}",
+								"modules"
+							]
+						},
+						"description": "Adiciona um novo módulo à lista de módulos assinados por um tenant específico."
+					},
+					"response": []
+				},
+				{
+					"name": "Deletar Tenant",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/tenants/{{tenantId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"tenants",
+								"{{tenantId}}"
+							]
+						},
+						"description": "Deleta um tenant do sistema usando o seu ID."
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints relacionados ao gerenciamento de Tenants (clientes) da plataforma."
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8081"
+		}
+	]
+}
