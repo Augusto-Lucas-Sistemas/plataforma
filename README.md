@@ -48,7 +48,7 @@ graph TD
             CS[Config Server]
         end
 
-        subgraph Bancos_de_Dados
+        subgraph "Bancos de Dados"
             DB_TS[(MongoDB - Tenants)]
             DB_M1[(DB do Modulo 1)]
             DB_M2[(DB do Modulo 2)]
@@ -79,7 +79,6 @@ graph TD
     TS -->|Busca configuracoes de| CS
     M1 -->|Busca configuracoes de| CS
     G -->|Busca configuracoes de| CS
-
 
 ```
 
