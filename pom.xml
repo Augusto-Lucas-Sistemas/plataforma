@@ -29,6 +29,7 @@
         <module>core/tenant-service</module>
         <module>infra/discovery-server</module>
         <module>infra/config-server</module>
+        <module>core/gateway</module>
     </modules>
 
     <dependencyManagement>

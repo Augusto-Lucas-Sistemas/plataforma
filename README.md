@@ -73,7 +73,7 @@ graph TD
     AS -- "Registra-se em" --> DS
     TS -- "Registra-se em" --> DS
     M1 -- "Registra-se em" --> DS
-    G -- "Descobre servicos em" --> DS
+    G -- "Registra-se em" --> DS
     CS -- "Registra-se em" --> DS
 
     AS -- "Busca configuracoes de" --> CS
@@ -90,15 +90,15 @@ O repositório está organizado em três pastas principais que agrupam os servi�
 
 | Serviço | Responsabilidade | Status |
 | :--- | :--- |:--- |
+| **`gateway`** | Ponto de entrada único para todas as requisições. Roteia, aplica filtros e agrega respostas usando **Spring Cloud Gateway**. | ✅ **Implementado** |
 | **`tenant-service`** | Gerencia os clientes (tenants) e os módulos que eles assinam. | ✅ **Implementado** |
 | **`auth-service`** | Cuida da autenticação (login/senha) e autorização (tokens JWT). | 📝 Planejado |
-| **`gateway`** | Ponto de entrada único (Single Point of Entry) para todas as requisições externas. | 📝 Planejado |
 
 ### 📁 `infra/` - Serviços de Infraestrutura
 
 | Serviço | Responsabilidade | Status |
 | :--- | :--- |:--- |
-| **`discovery-server`** | Permite que os serviços se encontrem dinamicamente na rede (Service Discovery), usando **Netflix Eureka**. | ✅ **Implementado** |
+| **`discovery-server`** | Permite que os serviços se encontrem dinamicamente na rede, usando **Netflix Eureka**. | ✅ **Implementado** |
 | **`config-server`** | Centraliza as configurações de todos os microservices a partir de um repositório Git, usando **Spring Cloud Config**. | ✅ **Implementado** |
 
 ### 📁 `modules/` - Módulos de Negócio
@@ -130,50 +130,84 @@ Toda a plataforma é orquestrada com Docker e Docker Compose para um ambiente de
     ```bash
     docker-compose up --build
     ```
-3.  O comando irá construir e iniciar todos os contêineres.
+3.  O comando irá construir e iniciar todos os contêineres em ordem de dependência.
 
-### 5.3. Acesso aos Serviços
+### 5.3. Acesso à Plataforma
 
-Após a execução, os principais pontos de acesso estarão disponíveis em `localhost`:
+Após a execução, **toda a interação com a plataforma deve ser feita através do API Gateway**. Os dashboards de infraestrutura também podem ser acessados diretamente.
 
-| Serviço | URL de Acesso | Descrição |
-| :--- | :--- | :--- |
-| **Config Server** | `http://localhost:8888` | API do Servidor de Configuração para inspecionar propriedades. |
-| **Discovery Server** | `http://localhost:8761` | Dashboard do Eureka para monitorar os serviços registrados. |
-| **Tenant Service** | `http://localhost:8081` | Acesso direto à API do serviço de tenants (para testes). |
-| **API Gateway** | `http://localhost:8080` | (Planejado) Ponto de entrada único para a plataforma. |
+| Ponto de Acesso      | URL de Acesso          | Descrição                                                                               |
+| :------------------- | :--------------------- | :-------------------------------------------------------------------------------------- |
+| **API Gateway** | `http://localhost:8080`  | **Ponto de entrada principal.** Todas as chamadas de API devem ser direcionadas para cá. |
+| **Discovery Server** | `http://localhost:8761`  | Dashboard do Eureka para monitorar os serviços registrados.                               |
+| **Config Server** | `http://localhost:8888`  | API do Servidor de Configuração para inspecionar as propriedades servidas.                |
 
 ## 6\. Documentação e Monitoramento
 
-### 6.1. Monitoramento de Serviços (Eureka Dashboard)
+Esta seção serve como um guia prático para explorar e interagir com os componentes da plataforma.
 
-O dashboard do **Eureka** é a principal ferramenta para verificar a saúde do ecossistema, mostrando todos os serviços ativos e registrados.
+### 6.1. Ponto de Entrada: API Gateway
 
-- **URL:** `http://localhost:8761`
+O `API Gateway` na porta `8080` é o único ponto de contato com o exterior. Ele roteia as requisições para os serviços internos com base no caminho da URL.
 
-### 6.2. Configuração Centralizada (Config Server)
+**Principais Rotas Mapeadas:**
 
-A plataforma utiliza o **Spring Cloud Config** para gerenciar as propriedades de todos os serviços de forma centralizada. As configurações são versionadas em um [repositório Git dedicado](https://www.google.com/search?q=URL_DO_SEU_REPO_CONFIG).
+| Rota no Gateway | Serviço de Destino | Exemplo de Acesso (Método GET) |
+| :--- | :--- | :--- |
+| `/api/v1/tenants/**` | `tenant-service` | [`http://localhost:8080/api/v1/tenants`](https://www.google.com/search?q=http://localhost:8080/api/v1/tenants) |
 
-- **URL para inspeção:** `http://localhost:8888/{nome-da-aplicacao}/{profile}`
-- **Exemplo:** Para ver as configurações do `tenant-service` no perfil `default`, acesse [http://localhost:8888/tenant-service/default](https://www.google.com/search?q=http://localhost:8888/tenant-service/default).
+### 6.2. Monitoramento de Serviços (Eureka Dashboard)
 
-### 6.3. Documentação de API (Swagger)
+O dashboard do **Eureka** é a principal ferramenta para verificar a saúde do ecossistema.
 
-Cada microserviço gera sua própria documentação interativa com **Swagger UI**.
+- **URL:** [**http://localhost:8761**](https://www.google.com/search?q=http://localhost:8761)
 
-- **Swagger UI (Tenant Service):** `http://localhost:8081/swagger-ui.html`
+**O que procurar:** Dentro do dashboard, na seção `Instances currently registered with Eureka`, você encontrará os seguintes serviços com o status `UP`:
 
-### 6.4. Coleção de Testes (Postman/Insomnia)
+- `TENANT-SERVICE`
+- `CONFIG-SERVER`
+- `GATEWAY`
 
-Uma coleção centralizada do Postman/Insomnia para testes de integração está localizada na raiz do projeto (`postman_collection.json`).
+### 6.3. Configuração Centralizada (Config Server)
+
+As configurações são versionadas em um [repositório Git dedicado](https://www.google.com/search?q=URL_DO_SEU_REPO_CONFIG) e servidas pelo **Spring Cloud Config**. Você pode inspecionar as configurações que cada serviço está recebendo.
+
+**Inspeção de Configurações por Serviço:**
+
+| Serviço | URL para Inspeção do Profile `default` |
+| :--- | :--- |
+| `gateway` | [`http://localhost:8888/gateway/default`](https://www.google.com/search?q=http://localhost:8888/gateway/default) |
+| `tenant-service` | [`http://localhost:8888/tenant-service/default`](https://www.google.com/search?q=http://localhost:8888/tenant-service/default) |
+| `discovery-server` | [`http://localhost:8888/discovery-server/default`](https://www.google.com/search?q=http://localhost:8888/discovery-server/default) |
+
+### 6.4. Documentação e Testes de API
+
+Para interagir e testar a API, utilize as ferramentas abaixo. Lembre-se que todas as chamadas devem passar pelo Gateway.
+
+#### Coleção do Postman/Insomnia
+
+O projeto inclui uma coleção centralizada para facilitar os testes.
+
+- **Arquivo:** `postman_collection.json` (localizado na raiz do projeto).
+- **Uso:** Importe este arquivo no seu cliente de API. A variável `baseUrl` já está pré-configurada para `http://localhost:8080`.
+
+**Principais Endpoints de Exemplo (via Gateway):**
+
+| Método | Endpoint no Gateway | Descrição |
+| :--- | :--- | :--- |
+| `GET` | `/api/v1/tenants` | Lista todos os tenants. |
+| `POST` | `/api/v1/tenants` | Cria um novo tenant (veja `body` na coleção). |
+
+#### Swagger UI
+
+A documentação interativa de cada serviço pode ser acessada através das rotas do Gateway. A configuração para uma interface unificada será adicionada futuramente.
 
 ## 7\. Próximos Passos
 
-Com a infraestrutura de Service Discovery e Configuração Centralizada implementada, os próximos passos são:
+Com a infraestrutura de base (Service Discovery, Config Server e API Gateway) implementada, o próximo passo é focar na segurança:
 
-1.  Implementar o **`auth-service`** para cuidar da autenticação e autorização.
-2.  Implementar o **`gateway`** como ponto de entrada único da API.
-3.  Expandir as funcionalidades do **`tenant-service`**.
+1.  Implementar o **`auth-service`** para gerenciar autenticação e autorização com JWT.
+2.  Integrar o `auth-service` ao `gateway` para proteger os endpoints.
+3.  Expandir as funcionalidades dos serviços de negócio (ex: `tenant-service`).
 
 Ao contribuir, por favor, siga os padrões de arquitetura e documentação já estabelecidos.

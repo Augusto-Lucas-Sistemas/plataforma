@@ -1,12 +1,9 @@
 services:
   mongodb:
-    # ... (sem alterações) ...
     image: mongo:latest
     container_name: mongodb
     ports:
       - "27017:27017"
-    volumes:
-      - mongo-data:/data/db
     networks:
       - plataforma-network
     healthcheck:
@@ -17,7 +14,6 @@ services:
       start_period: 20s
 
   discovery-server:
-    # ... (sem alterações) ...
     container_name: discovery-server
     build:
       context: .
@@ -28,7 +24,6 @@ services:
       - plataforma-network
     restart: on-failure
 
-  # ADICIONE ESTE NOVO SERVIÇO
   config-server:
     container_name: config-server
     build:
@@ -38,28 +33,38 @@ services:
       - "8888:8888"
     networks:
       - plataforma-network
-    # Ele precisa que o discovery-server esteja de pé para se registrar
     depends_on:
       - discovery-server
     restart: on-failure
 
+  gateway:
+    container_name: gateway
+    build:
+      context: .
+      dockerfile: ./core/gateway/Dockerfile
+    ports:
+      # A porta 8080 é a única entrada para nossa API agora
+      - "8080:8080"
+    networks:
+      - plataforma-network
+    depends_on:
+      - discovery-server
+      - config-server
+    restart: on-failure
+
   tenantservice:
-    # ... (apenas a seção 'depends_on' foi alterada) ...
     container_name: tenantservice
     build:
       context: .
       dockerfile: ./core/tenant-service/Dockerfile
-    ports:
-      - "8081:8081"
     networks:
       - plataforma-network
-    # ATUALIZE ESTA SEÇÃO 'depends_on'
     depends_on:
       mongodb:
         condition: service_healthy
       discovery-server:
         condition: service_started
-      config-server: # Adicionamos a dependência do config-server
+      config-server:
         condition: service_started
     environment:
       - SPRING_DATA_MONGODB_URI=mongodb://mongodb:27017/plataforma_db
