@@ -170,7 +170,7 @@ O dashboard do **Eureka** é a principal ferramenta para verificar a saúde do e
 
 ### 6.3. Configuração Centralizada (Config Server)
 
-As configurações são versionadas em um [repositório Git dedicado](https://www.google.com/search?q=URL_DO_SEU_REPO_CONFIG) e servidas pelo **Spring Cloud Config**. Você pode inspecionar as configurações que cada serviço está recebendo.
+As configurações são versionadas em um [repositório Git dedicado](https://github.com/Augusto-Lucas-Sistemas/plataforma-config) e servidas pelo **Spring Cloud Config**. Você pode inspecionar as configurações que cada serviço está recebendo.
 
 **Inspeção de Configurações por Serviço:**
 
