@@ -1,4 +1,4 @@
-# Tenant Service
+# Core: Tenant Service
 
 Microserviço responsável pelo gerenciamento de **Tenants** (clientes) da plataforma. Ele centraliza todas as regras de negócio e operações relacionadas à criação, consulta, atualização e exclusão de tenants, bem como o controle dos módulos que cada um tem acesso.
 
@@ -12,52 +12,48 @@ Um **Tenant** representa um cliente individual da plataforma. Cada tenant é uma
 
 ### 1.2. Atributos de um Tenant
 
-Um tenant é definido pelos seguintes atributos:
-
-- `id` (String): Identificador único gerado automaticamente pelo sistema (MongoDB Object ID).
+- `id` (String): Identificador único (MongoDB Object ID).
 - `name` (String): Nome comercial do cliente.
-- `contactEmail` (String): E-mail de contato principal do cliente.
 - `status` (Enum): A situação atual do tenant na plataforma.
-- `subscribedModules` (Set\<String\>): Uma lista dos identificadores dos módulos que o tenant contratou (ex: `"mod-oficina"`).
-- `createdAt` (LocalDateTime): Data e hora em que o tenant foi registrado no sistema.
-- `updatedAt` (LocalDateTime): Data e hora da última modificação nos dados do tenant.
+- `subscribedModules` (Set\<String\>): Lista dos identificadores dos módulos que o tenant contratou.
+- `createdAt` (LocalDateTime): Data e hora do registro.
+- `updatedAt` (LocalDateTime): Data e hora da última modificação.
 
 ### 1.3. Status do Tenant
 
-O status de um tenant determina sua condição na plataforma e pode ser um dos seguintes:
-
-- **ACTIVE**: O tenant está ativo e pode utilizar os módulos contratados. É o estado padrão ao criar um novo tenant.
+- **ACTIVE**: O tenant está ativo e pode utilizar os módulos contratados.
 - **INACTIVE**: O tenant foi desativado e não pode mais acessar a plataforma.
-- **PENDING\_PAYMENT**: O tenant está com pagamentos pendentes, podendo ter funcionalidades restritas.
-- **SUSPENDED**: O tenant foi suspenso por violação dos termos ou outra razão administrativa. O acesso é bloqueado.
+- **PENDING\_PAYMENT**: O tenant está com pagamentos pendentes.
+- **SUSPENDED**: O tenant foi suspenso por razões administrativas.
 
 ## 2\. Detalhes Técnicos
 
-Esta seção aborda a arquitetura, tecnologias e a API do serviço.
-
 ### 2.1. Arquitetura
 
-O `tenant-service` foi construído utilizando a **Arquitetura Hexagonal (Portas e Adaptadores)**. Esta abordagem isola o núcleo de regras de negócio (o "domínio") de detalhes externos como o banco de dados ou a API web.
+O `tenant-service` foi construído utilizando a **Arquitetura Hexagonal (Portas e Adaptadores)**. Esta abordagem isola o núcleo de regras de negócio de detalhes externos.
 
-- **Domínio (`domain`):** Contém a lógica de negócio pura (entidades, casos de uso e portas/interfaces).
-- **Adaptadores (`adapter`):** Conectam o domínio com o mundo exterior.
-    - **Adaptadores de Entrada (`in`):** O `TenantController` expõe a lógica de negócio como uma API REST.
-    - **Adaptadores de Saída (`out`):** O `TenantPersistenceAdapter` implementa a porta de repositório usando MongoDB.
+- **Domínio (`domain`):** Contém a lógica de negócio pura (entidades, casos de uso, portas).
+- **Adaptadores (`adapter`):** Conectam o domínio com o mundo exterior (Controladores REST, Adaptadores de Persistência com MongoDB).
 
 ### 2.2. Tecnologias Utilizadas
 
-- **Java 21**: Versão da linguagem de programação (LTS).
-- **Spring Boot 3.3+**: Framework principal para criação da aplicação.
-- **SpringDoc OpenAPI (Swagger)**: Para geração de documentação de API interativa.
+- **Java 21** (LTS)
+- **Spring Boot 3.2.5**
+- **Spring Cloud 2023.0.1**
+- **Spring Cloud Netflix Eureka Client**: Para registro e descoberta de serviço.
 - **Spring Web**: Para a criação dos endpoints REST.
-- **Spring Data MongoDB**: Para a integração e persistência com o banco de dados.
-- **Maven**: Ferramenta de gerenciamento de dependências e build.
-- **Lombok**: Para redução de código boilerplate.
-- **Docker & Docker Compose**: Para conteinerização e orquestração do ambiente.
+- **Spring Data MongoDB**: Para a integração com o banco de dados.
+- **SpringDoc OpenAPI (Swagger)**: Para geração de documentação de API interativa.
+- **Maven**: Gerenciamento de dependências e build.
+- **Lombok**: Redução de código boilerplate.
+- **Docker & Docker Compose**: Para conteinerização e orquestração.
 
-### 2.3. API Endpoints
+### 2.3. API Endpoints e Documentação (Swagger)
 
-A API está disponível sob o caminho base `/api/v1/tenants`. Para uma visualização completa e interativa, acesse a documentação do Swagger UI.
+A API está disponível sob o caminho base `/api/v1/tenants`. A documentação interativa gerada pelo Swagger é a forma recomendada para explorar e testar os endpoints individualmente.
+
+- **Swagger UI (Interface Gráfica):** [http://localhost:8081/swagger-ui.html](https://www.google.com/search?q=http://localhost:8081/swagger-ui.html)
+- **Definição OpenAPI (JSON):** [http://localhost:8081/v3/api-docs](https://www.google.com/search?q=http://localhost:8081/v3/api-docs)
 
 | Método | Endpoint                    | Descrição                                         |
 | :----- | :-------------------------- | :------------------------------------------------ |
@@ -67,39 +63,52 @@ A API está disponível sob o caminho base `/api/v1/tenants`. Para uma visualiza
 | `PUT`  | `/{id}/modules`             | Adiciona um novo módulo a um tenant existente.     |
 | `DELETE` | `/{id}`                     | Deleta um tenant pelo seu ID.                      |
 
-### 2.4. Documentação de API (Swagger)
+### 2.4. Testes com Postman/Insomnia
 
-O projeto gera automaticamente uma documentação de API rica e interativa usando `springdoc-openapi`. Após iniciar o serviço, a documentação estará disponível nos seguintes endereços:
+Para testes de integração ou para criar um ambiente de testes automatizados, os endpoints deste serviço estão incluídos na **coleção geral do Postman/Insomnia** da plataforma.
 
-- **Swagger UI (Interface Gráfica):** [http://localhost:8081/swagger-ui.html](https://www.google.com/search?q=http://localhost:8081/swagger-ui.html)
-- **Definição OpenAPI (JSON):** [http://localhost:8081/v3/api-docs](https://www.google.com/search?q=http://localhost:8081/v3/api-docs)
+Esta coleção está localizada na raiz do projeto principal (`plataforma/`) no arquivo `postman_collection.json` (ou nome similar). Dentro da coleção, as requisições para o `tenant-service` estão organizadas em sua própria pasta.
 
-A interface do Swagger UI é a maneira recomendada para explorar e testar os endpoints da API.
+Para mais informações sobre como importar e usar a coleção, consulte o `README.md` da raiz do projeto.
 
-## 3\. Como Executar (com Docker)
+### 2.5. Integração com o Discovery Server (Eureka)
 
-Este serviço é projetado para ser executado como parte da plataforma via Docker Compose, que orquestra tanto a aplicação quanto suas dependências.
+Este serviço é um **Discovery Client**, o que significa que ele se registra ativamente no `discovery-server` (Eureka) ao iniciar. Isso permite que outros serviços da plataforma (como o futuro API Gateway) o encontrem dinamicamente, sem precisar de endereços de rede fixos.
 
-### 3.1. Pré-requisitos
+Essa funcionalidade é habilitada por três componentes principais:
 
-- Docker
-- Docker Compose
+1.  **Dependência Maven:** O `pom.xml` inclui `spring-cloud-starter-netflix-eureka-client`.
+2.  **Anotação:** A classe principal `TenantServiceApplication` é anotada com `@EnableDiscoveryClient`.
+3.  **Configuração:** O arquivo `application.yml` contém as propriedades que apontam para o Eureka:
+    ```yaml
+    eureka:
+      client:
+        service-url:
+          defaultZone: http://discovery-server:8761/eureka/
+    ```
 
-### 3.2. Execução
+## 3\. Como Executar
 
-1.  Navegue até a **pasta raiz da plataforma** (o diretório que contém o arquivo `docker-compose.yml`).
+### 3.1. Como Parte da Plataforma (Modo Padrão com Docker)
 
-2.  Execute o seguinte comando no seu terminal:
+A forma principal de execução é via Docker Compose, que orquestra todos os serviços da plataforma.
 
+1.  Navegue até a **pasta raiz do projeto**.
+2.  Execute o comando:
     ```bash
     docker-compose up --build
     ```
+3.  O serviço estará disponível em `http://localhost:8081` e se registrará automaticamente no Discovery Server.
 
-3.  O serviço estará disponível na porta `8081` da sua máquina local (`localhost`).
+### 3.2. De Forma Isolada (Standalone - para Debug)
 
-### 3.3. Testando
+Para desenvolvimento e depuração focados neste serviço, você pode executá-lo diretamente pela sua IDE.
 
-A forma recomendada para testar os endpoints é através da interface do **Swagger UI**.
-
-1.  Após a execução, abra o seu navegador e acesse: [**http://localhost:8081/swagger-ui.html**](https://www.google.com/search?q=http://localhost:8081/swagger-ui.html)
-2.  Você verá todos os endpoints listados. Expanda-os para ver detalhes, exemplos de `body` e execute-os diretamente do navegador clicando em "Try it out" -\> "Execute".
+1.  Abra o projeto `plataforma` na sua IDE (ex: IntelliJ).
+2.  **Importante:** Este serviço depende do `MongoDB` e do `Discovery Server`. Antes de prosseguir, certifique-se de que eles estejam rodando. Você pode iniciá-los separadamente com o Docker Compose:
+    ```bash
+    # Na raiz do projeto, inicie apenas as dependências
+    docker-compose up -d mongodb discovery-server
+    ```
+3.  Com as dependências no ar, encontre e execute a classe principal `TenantServiceApplication.java`.
+4.  O serviço estará disponível em `http://localhost:8081`.
