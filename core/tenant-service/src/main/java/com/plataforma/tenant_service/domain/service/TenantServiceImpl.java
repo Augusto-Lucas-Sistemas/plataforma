@@ -1,5 +1,7 @@
 package com.plataforma.tenant_service.domain.service;
 
+import com.plataforma.tenant_service.domain.exception.TenantIllegalArgumentRequestException;
+import com.plataforma.tenant_service.domain.exception.TenantNotFoundException;
 import com.plataforma.tenant_service.domain.model.Tenant;
 import com.plataforma.tenant_service.domain.port.in.TenantUseCase;
 import com.plataforma.tenant_service.domain.port.out.TenantRepositoryPort;
@@ -29,7 +31,7 @@ public class TenantServiceImpl implements TenantUseCase {
         // Validação de negócio
         tenantRepositoryPort.findByName(tenant.getName()).ifPresent(existingTenant -> {
             log.error("Tentativa de criar tenant com nome duplicado: {}", tenant.getName());
-            throw new IllegalArgumentException("Já existe um tenant com o nome: " + tenant.getName());
+            throw new TenantIllegalArgumentRequestException("Já existe um tenant com o nome: " + tenant.getName());
         });
 
         // Lógica de negócio
@@ -54,9 +56,15 @@ public class TenantServiceImpl implements TenantUseCase {
     }
 
     @Override
-    public Optional<Tenant> getTenantById(String id) {
+    public Tenant getTenantById(String id) {
         log.debug("Chamando a porta de persistência para buscar tenant pelo ID: {}", id);
-        return tenantRepositoryPort.findById(id);
+
+        Optional<Tenant> tenant = tenantRepositoryPort.findById(id);
+        if(tenant.isPresent()){
+            return tenant.get();
+        }else{
+            throw new TenantNotFoundException("Tenant não encontrado com o id: " + id);
+        }
     }
 
     @Override
@@ -66,7 +74,7 @@ public class TenantServiceImpl implements TenantUseCase {
         // Verificação de existência antes de deletar para um log mais preciso
         if (tenantRepositoryPort.findById(id).isEmpty()) {
             log.warn("Tentativa de deletar um tenant que não existe. ID: {}", id);
-            // Poderíamos lançar um erro aqui, mas por ora apenas logamos e permitimos que a operação continue (será idempotente).
+            throw new TenantNotFoundException("Tenant não encontrado com o id: " + id);
         }
 
         tenantRepositoryPort.deleteById(id);
@@ -81,7 +89,7 @@ public class TenantServiceImpl implements TenantUseCase {
                 .orElseThrow(() -> {
                     // Logamos o erro antes de lançar a exceção.
                     log.error("Falha ao tentar adicionar módulo: Tenant com ID '{}' não foi encontrado.", tenantId);
-                    return new RuntimeException("Tenant não encontrado com o id: " + tenantId);
+                    return new TenantNotFoundException("Tenant não encontrado com o id: " + tenantId);
                 });
 
         Set<String> modules = tenant.getSubscribedModules();

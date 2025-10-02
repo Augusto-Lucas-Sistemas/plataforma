@@ -17,7 +17,7 @@ public interface TenantUseCase {
 
     List<Tenant> getAllTenants();
 
-    Optional<Tenant> getTenantById(String id);
+    Tenant getTenantById(String id);
 
     void deleteTenant(String id);
 
