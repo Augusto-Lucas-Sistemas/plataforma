@@ -14,6 +14,7 @@ Um **Tenant** representa um cliente individual da plataforma. Cada tenant é uma
 
 - `id` (String): Identificador único (MongoDB Object ID).
 - `name` (String): Nome comercial do cliente.
+- `contactEmail` (String): E-mail de contato principal do cliente.
 - `status` (Enum): A situação atual do tenant na plataforma.
 - `subscribedModules` (Set\<String\>): Lista dos identificadores dos módulos que o tenant contratou.
 - `createdAt` (LocalDateTime): Data e hora do registro.
@@ -40,6 +41,7 @@ O `tenant-service` foi construído utilizando a **Arquitetura Hexagonal (Portas 
 - **Java 21** (LTS)
 - **Spring Boot 3.2.5**
 - **Spring Cloud 2023.0.1**
+- **Spring Cloud Config Client**: Para consumir configurações de um servidor centralizado.
 - **Spring Cloud Netflix Eureka Client**: Para registro e descoberta de serviço.
 - **Spring Web**: Para a criação dos endpoints REST.
 - **Spring Data MongoDB**: Para a integração com o banco de dados.
@@ -65,50 +67,61 @@ A API está disponível sob o caminho base `/api/v1/tenants`. A documentação i
 
 ### 2.4. Testes com Postman/Insomnia
 
-Para testes de integração ou para criar um ambiente de testes automatizados, os endpoints deste serviço estão incluídos na **coleção geral do Postman/Insomnia** da plataforma.
+Para testes de integração, os endpoints deste serviço estão incluídos na **coleção geral do Postman/Insomnia** da plataforma, localizada na raiz do projeto. Dentro da coleção, as requisições para o `tenant-service` estão organizadas em sua própria pasta.
 
-Esta coleção está localizada na raiz do projeto principal (`plataforma/`) no arquivo `postman_collection.json` (ou nome similar). Dentro da coleção, as requisições para o `tenant-service` estão organizadas em sua própria pasta.
+### 2.5. Integração com o Config Server
 
-Para mais informações sobre como importar e usar a coleção, consulte o `README.md` da raiz do projeto.
+Este serviço é um **Config Client**, o que significa que ele busca todas as suas configurações no `config-server` centralizado durante a inicialização.
 
-### 2.5. Integração com o Discovery Server (Eureka)
+Essa funcionalidade é habilitada por dois componentes principais:
 
-Este serviço é um **Discovery Client**, o que significa que ele se registra ativamente no `discovery-server` (Eureka) ao iniciar. Isso permite que outros serviços da plataforma (como o futuro API Gateway) o encontrem dinamicamente, sem precisar de endereços de rede fixos.
-
-Essa funcionalidade é habilitada por três componentes principais:
-
-1.  **Dependência Maven:** O `pom.xml` inclui `spring-cloud-starter-netflix-eureka-client`.
-2.  **Anotação:** A classe principal `TenantServiceApplication` é anotada com `@EnableDiscoveryClient`.
-3.  **Configuração:** O arquivo `application.yml` contém as propriedades que apontam para o Eureka:
+1.  **Dependência Maven:** O `pom.xml` inclui `spring-cloud-starter-config`.
+2.  **Configuração de Bootstrap:** O arquivo `application.yml` local contém as instruções para encontrar o Config Server via Eureka:
     ```yaml
-    eureka:
-      client:
-        service-url:
-          defaultZone: http://discovery-server:8761/eureka/
+    spring:
+      config:
+        import: "configserver:"
+      cloud:
+        config:
+          discovery:
+            enabled: true
+            service-id: config-server
     ```
+
+Isso garante que propriedades como a porta do servidor e a URI do banco de dados sejam gerenciadas externamente no repositório Git `plataforma-config`.
+
+### 2.6. Integração com o Discovery Server (Eureka)
+
+Este serviço também é um **Discovery Client**, registrando-se ativamente no `discovery-server` (Eureka) ao iniciar. Isso permite que outros serviços da plataforma o encontrem dinamicamente.
+
+Essa funcionalidade é habilitada por:
+
+1.  **Dependência Maven:** `spring-cloud-starter-netflix-eureka-client`.
+2.  **Anotação:** A classe principal é anotada com `@EnableDiscoveryClient`.
+3.  **Configuração:** O `application.yml` local contém as propriedades que apontam para o Eureka.
 
 ## 3\. Como Executar
 
 ### 3.1. Como Parte da Plataforma (Modo Padrão com Docker)
 
-A forma principal de execução é via Docker Compose, que orquestra todos os serviços da plataforma.
+A forma principal de execução é via Docker Compose, que orquestra todos os serviços.
 
 1.  Navegue até a **pasta raiz do projeto**.
 2.  Execute o comando:
     ```bash
     docker-compose up --build
     ```
-3.  O serviço estará disponível em `http://localhost:8081` e se registrará automaticamente no Discovery Server.
+3.  O serviço buscará suas configurações, subirá na porta correta (ex: `8081`) e se registrará no Discovery Server.
 
 ### 3.2. De Forma Isolada (Standalone - para Debug)
 
 Para desenvolvimento e depuração focados neste serviço, você pode executá-lo diretamente pela sua IDE.
 
 1.  Abra o projeto `plataforma` na sua IDE (ex: IntelliJ).
-2.  **Importante:** Este serviço depende do `MongoDB` e do `Discovery Server`. Antes de prosseguir, certifique-se de que eles estejam rodando. Você pode iniciá-los separadamente com o Docker Compose:
+2.  **Importante:** Este serviço possui dependências externas. Antes de prosseguir, certifique-se de que elas estejam rodando. Você pode iniciá-las com o Docker Compose:
     ```bash
     # Na raiz do projeto, inicie apenas as dependências
-    docker-compose up -d mongodb discovery-server
+    docker-compose up -d mongodb discovery-server config-server
     ```
 3.  Com as dependências no ar, encontre e execute a classe principal `TenantServiceApplication.java`.
-4.  O serviço estará disponível em `http://localhost:8081`.
+4.  O serviço buscará suas configurações no `config-server` e subirá na porta configurada (ex: `8081`).

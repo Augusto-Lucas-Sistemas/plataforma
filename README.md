@@ -16,7 +16,7 @@ O objetivo deste projeto é criar uma única plataforma base que possa atender a
 
 ## 2\. Arquitetura da Plataforma
 
-A plataforma adota uma **Arquitetura de Microservices** para garantir escalabilidade, resiliência e manutenibilidade. Cada serviço é um componente independente, com suas próprias responsabilidades e, em muitos casos, seu próprio banco de dados.
+A plataforma adota uma **Arquitetura de Microservices** para garantir escalabilidade, resiliência e manutenibilidade. Cada serviço é um componente independente com suas próprias responsabilidades.
 
 ### 2.1. Diagrama de Contêineres (Modelo C4)
 
@@ -74,6 +74,7 @@ graph TD
     TS -- "Registra-se em" --> DS
     M1 -- "Registra-se em" --> DS
     G -- "Descobre servicos em" --> DS
+    CS -- "Registra-se em" --> DS
 
     AS -- "Busca configuracoes de" --> CS
     TS -- "Busca configuracoes de" --> CS
@@ -87,26 +88,20 @@ O repositório está organizado em três pastas principais que agrupam os servi�
 
 ### 📁 `core/` - Serviços Essenciais
 
-Serviços que formam o núcleo da plataforma.
-
 | Serviço | Responsabilidade | Status |
 | :--- | :--- |:--- |
 | **`tenant-service`** | Gerencia os clientes (tenants) e os módulos que eles assinam. | ✅ **Implementado** |
 | **`auth-service`** | Cuida da autenticação (login/senha) e autorização (tokens JWT). | 📝 Planejado |
-| **`gateway`** | Ponto de entrada único (Single Point of Entry) para todas as requisições externas. Roteia, aplica filtros de segurança e agrega respostas. | 📝 Planejado |
+| **`gateway`** | Ponto de entrada único (Single Point of Entry) para todas as requisições externas. | 📝 Planejado |
 
 ### 📁 `infra/` - Serviços de Infraestrutura
-
-Serviços que dão suporte à arquitetura de microservices.
 
 | Serviço | Responsabilidade | Status |
 | :--- | :--- |:--- |
 | **`discovery-server`** | Permite que os serviços se encontrem dinamicamente na rede (Service Discovery), usando **Netflix Eureka**. | ✅ **Implementado** |
-| **`config-server`** | Centraliza as configurações de todos os microservices em um único local. | 📝 Planejado |
+| **`config-server`** | Centraliza as configurações de todos os microservices a partir de um repositório Git, usando **Spring Cloud Config**. | ✅ **Implementado** |
 
 ### 📁 `modules/` - Módulos de Negócio
-
-Módulos específicos de cada nicho de mercado, contendo a lógica de negócio do cliente final.
 
 | Serviço | Responsabilidade | Status |
 | :--- | :--- |:--- |
@@ -115,7 +110,7 @@ Módulos específicos de cada nicho de mercado, contendo a lógica de negócio d
 
 ## 4\. Arquitetura do Serviço Individual
 
-Todos os serviços seguem o padrão de **Arquitetura Hexagonal (Portas e Adaptadores)** para isolar a lógica de negócio de detalhes de infraestrutura (APIs REST, bancos de dados, etc.). Para mais detalhes, consulte o `README.md` de cada serviço.
+Todos os serviços seguem o padrão de **Arquitetura Hexagonal (Portas e Adaptadores)** para isolar a lógica de negócio de detalhes de infraestrutura. Para mais detalhes, consulte o `README.md` de cada serviço.
 
 ## 5\. Ambiente de Desenvolvimento com Docker
 
@@ -130,12 +125,12 @@ Toda a plataforma é orquestrada com Docker e Docker Compose para um ambiente de
 
 ### 5.2. Como Executar a Plataforma
 
-1.  Clone este repositório.
-2.  Na pasta raiz do projeto, execute o comando:
+1.  Clone este repositório e o repositório de configurações (`plataforma-config`).
+2.  Na pasta raiz deste projeto, execute o comando:
     ```bash
     docker-compose up --build
     ```
-3.  O comando irá construir as imagens de cada serviço e iniciar todos os contêineres.
+3.  O comando irá construir e iniciar todos os contêineres.
 
 ### 5.3. Acesso aos Serviços
 
@@ -143,6 +138,7 @@ Após a execução, os principais pontos de acesso estarão disponíveis em `loc
 
 | Serviço | URL de Acesso | Descrição |
 | :--- | :--- | :--- |
+| **Config Server** | `http://localhost:8888` | API do Servidor de Configuração para inspecionar propriedades. |
 | **Discovery Server** | `http://localhost:8761` | Dashboard do Eureka para monitorar os serviços registrados. |
 | **Tenant Service** | `http://localhost:8081` | Acesso direto à API do serviço de tenants (para testes). |
 | **API Gateway** | `http://localhost:8080` | (Planejado) Ponto de entrada único para a plataforma. |
@@ -151,32 +147,33 @@ Após a execução, os principais pontos de acesso estarão disponíveis em `loc
 
 ### 6.1. Monitoramento de Serviços (Eureka Dashboard)
 
-Com a plataforma no ar, o dashboard do **Eureka (Discovery Server)** é a principal ferramenta para verificar a saúde do ecossistema de microservices.
+O dashboard do **Eureka** é a principal ferramenta para verificar a saúde do ecossistema, mostrando todos os serviços ativos e registrados.
 
 - **URL:** `http://localhost:8761`
 
-Ao acessá-lo, você pode ver a lista de todas as instâncias de serviços que estão ativas e registradas na plataforma, como o `TENANT-SERVICE`.
+### 6.2. Configuração Centralizada (Config Server)
 
-### 6.2. Documentação de API (Swagger)
+A plataforma utiliza o **Spring Cloud Config** para gerenciar as propriedades de todos os serviços de forma centralizada. As configurações são versionadas em um [repositório Git dedicado](https://www.google.com/search?q=URL_DO_SEU_REPO_CONFIG).
 
-Cada microserviço gera sua própria documentação interativa usando **Swagger UI**.
+- **URL para inspeção:** `http://localhost:8888/{nome-da-aplicacao}/{profile}`
+- **Exemplo:** Para ver as configurações do `tenant-service` no perfil `default`, acesse [http://localhost:8888/tenant-service/default](https://www.google.com/search?q=http://localhost:8888/tenant-service/default).
+
+### 6.3. Documentação de API (Swagger)
+
+Cada microserviço gera sua própria documentação interativa com **Swagger UI**.
 
 - **Swagger UI (Tenant Service):** `http://localhost:8081/swagger-ui.html`
 
-Use a interface do Swagger para explorar e testar os endpoints de cada API individualmente.
+### 6.4. Coleção de Testes (Postman/Insomnia)
 
-### 6.3. Coleção de Testes (Postman/Insomnia)
-
-Uma coleção centralizada do Postman/Insomnia para testes de integração está localizada na raiz do projeto (`postman_collection.json`). Ela contém requisições para todos os módulos, organizadas em pastas.
-
-> **Nota:** Ao adicionar ou modificar endpoints, lembre-se de atualizar esta coleção central.
+Uma coleção centralizada do Postman/Insomnia para testes de integração está localizada na raiz do projeto (`postman_collection.json`).
 
 ## 7\. Próximos Passos
 
-Este é um projeto em evolução. Com a base de `Service Discovery` implementada, os próximos passos incluem:
+Com a infraestrutura de Service Discovery e Configuração Centralizada implementada, os próximos passos são:
 
-1.  Implementar o **`config-server`** para centralizar as configurações.
-2.  Implementar o **`auth-service`** para cuidar da autenticação e autorização.
-3.  Implementar o **`gateway`** como ponto de entrada único da API.
+1.  Implementar o **`auth-service`** para cuidar da autenticação e autorização.
+2.  Implementar o **`gateway`** como ponto de entrada único da API.
+3.  Expandir as funcionalidades do **`tenant-service`**.
 
 Ao contribuir, por favor, siga os padrões de arquitetura e documentação já estabelecidos.

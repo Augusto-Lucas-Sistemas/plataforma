@@ -1,5 +1,6 @@
 services:
   mongodb:
+    # ... (sem alterações) ...
     image: mongo:latest
     container_name: mongodb
     ports:
@@ -16,6 +17,7 @@ services:
       start_period: 20s
 
   discovery-server:
+    # ... (sem alterações) ...
     container_name: discovery-server
     build:
       context: .
@@ -26,7 +28,23 @@ services:
       - plataforma-network
     restart: on-failure
 
+  # ADICIONE ESTE NOVO SERVIÇO
+  config-server:
+    container_name: config-server
+    build:
+      context: .
+      dockerfile: ./infra/config-server/Dockerfile
+    ports:
+      - "8888:8888"
+    networks:
+      - plataforma-network
+    # Ele precisa que o discovery-server esteja de pé para se registrar
+    depends_on:
+      - discovery-server
+    restart: on-failure
+
   tenantservice:
+    # ... (apenas a seção 'depends_on' foi alterada) ...
     container_name: tenantservice
     build:
       context: .
@@ -35,11 +53,14 @@ services:
       - "8081:8081"
     networks:
       - plataforma-network
+    # ATUALIZE ESTA SEÇÃO 'depends_on'
     depends_on:
       mongodb:
         condition: service_healthy
       discovery-server:
-        condition: service_started # Espera o discovery iniciar
+        condition: service_started
+      config-server: # Adicionamos a dependência do config-server
+        condition: service_started
     environment:
       - SPRING_DATA_MONGODB_URI=mongodb://mongodb:27017/plataforma_db
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/

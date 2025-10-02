@@ -28,6 +28,7 @@
     <modules>
         <module>core/tenant-service</module>
         <module>infra/discovery-server</module>
+        <module>infra/config-server</module>
     </modules>
 
     <dependencyManagement>
