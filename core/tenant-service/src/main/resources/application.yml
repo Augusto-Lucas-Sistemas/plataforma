@@ -1,0 +1,15 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: tenant-service # Nome que aparecerá no dashboard do Eureka
+
+# Configuração para que este serviço se registre no Discovery Server
+eureka:
+  client:
+    service-url:
+      # Endereço do nosso Eureka Server dentro da rede Docker
+      defaultZone: http://discovery-server:8761/eureka/
+  instance:
+    prefer-ip-address: true

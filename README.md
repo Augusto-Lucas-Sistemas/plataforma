@@ -1,8 +1,7 @@
 # Plataforma Multimodular SaaS
 
-[](https://github.com/actions)
-[](https://www.google.com/search?q=./LICENSE)
-[](https://www.google.com/search?q=http://localhost:8081/swagger-ui.html)
+[](https://www.google.com/search?q=%5Bhttps://github.com/actions%5D\(https://github.com/actions\))
+[](https://www.google.com/search?q=%5Bhttps://www.google.com/search%3Fq%3D./LICENSE%5D\(https://www.google.com/search%3Fq%3D./LICENSE\))
 
 Uma plataforma robusta e escalável, construída em Java com Spring Boot, projetada para servir como um software como serviço (SaaS) multitenant. A arquitetura é baseada em microservices e visa oferecer diferentes módulos de negócio para clientes distintos de forma isolada e segura.
 
@@ -102,7 +101,7 @@ Serviços que dão suporte à arquitetura de microservices.
 
 | Serviço | Responsabilidade | Status |
 | :--- | :--- |:--- |
-| **`discovery-server`** | Permite que os serviços se encontrem dinamicamente na rede (Service Discovery). Será usado [Eureka](https://github.com/Netflix/eureka). | 📝 Planejado |
+| **`discovery-server`** | Permite que os serviços se encontrem dinamicamente na rede (Service Discovery), usando **Netflix Eureka**. | ✅ **Implementado** |
 | **`config-server`** | Centraliza as configurações de todos os microservices em um único local. | 📝 Planejado |
 
 ### 📁 `modules/` - Módulos de Negócio
@@ -116,71 +115,68 @@ Módulos específicos de cada nicho de mercado, contendo a lógica de negócio d
 
 ## 4\. Arquitetura do Serviço Individual
 
-Para garantir consistência, manutenibilidade e baixo acoplamento, todos os serviços de negócio e de core devem seguir o padrão de **Arquitetura Hexagonal (Portas e Adaptadores)**.
-
-Isso significa que o núcleo de cada serviço (contendo a lógica de negócio) é completamente isolado de tecnologias externas. A comunicação com o mundo (APIs REST, bancos de dados, filas de mensagens) é feita através de "Portas" (interfaces) e "Adaptadores" (implementações).
-
-Para um mergulho profundo nesta arquitetura, consulte o `README.md` de cada serviço individual (ex: [`core/tenant-service/README.md`](https://www.google.com/search?q=%5Bhttps://www.google.com/search%3Fq%3D./core/tenant-service/README.md%5D\(https://www.google.com/search%3Fq%3D./core/tenant-service/README.md\))).
+Todos os serviços seguem o padrão de **Arquitetura Hexagonal (Portas e Adaptadores)** para isolar a lógica de negócio de detalhes de infraestrutura (APIs REST, bancos de dados, etc.). Para mais detalhes, consulte o `README.md` de cada serviço.
 
 ## 5\. Ambiente de Desenvolvimento com Docker
 
-Toda a plataforma é orquestrada com Docker e Docker Compose para garantir um ambiente de desenvolvimento consistente e fácil de configurar.
+Toda a plataforma é orquestrada com Docker e Docker Compose para um ambiente de desenvolvimento consistente.
 
 ### 5.1. Pré-requisitos
 
 - Git
-- JDK 21 (LTS) - Para a IDE reconhecer e compilar o código.
-- Maven 3.8+ - Para gerenciamento de dependências.
-- Docker e Docker Compose - Para executar a plataforma integrada.
+- JDK 21 (LTS)
+- Maven 3.8+
+- Docker e Docker Compose
 
 ### 5.2. Como Executar a Plataforma
 
 1.  Clone este repositório.
-
-2.  Navegue até a pasta raiz `plataforma/`.
-
-3.  Execute o seguinte comando:
-
+2.  Na pasta raiz do projeto, execute o comando:
     ```bash
     docker-compose up --build
     ```
-
-4.  O comando irá construir as imagens de cada serviço e iniciar todos os contêineres definidos no arquivo `docker-compose.yml`.
+3.  O comando irá construir as imagens de cada serviço e iniciar todos os contêineres.
 
 ### 5.3. Acesso aos Serviços
 
 Após a execução, os principais pontos de acesso estarão disponíveis em `localhost`:
 
-| Serviço | URL de Acesso |
-| :--- | :--- |
-| **API Gateway** | `http://localhost:8080` |
-| **Tenant Service (direto)** | `http://localhost:8081` |
-| **Discovery Server** | `http://localhost:8761` |
+| Serviço | URL de Acesso | Descrição |
+| :--- | :--- | :--- |
+| **Discovery Server** | `http://localhost:8761` | Dashboard do Eureka para monitorar os serviços registrados. |
+| **Tenant Service** | `http://localhost:8081` | Acesso direto à API do serviço de tenants (para testes). |
+| **API Gateway** | `http://localhost:8080` | (Planejado) Ponto de entrada único para a plataforma. |
 
-## 6\. Documentação
+## 6\. Documentação e Monitoramento
 
-### 6.1. Documentação de API (Swagger)
+### 6.1. Monitoramento de Serviços (Eureka Dashboard)
 
-Cada microserviço que expõe uma API REST gera automaticamente sua própria documentação interativa usando **`springdoc-openapi`**.
+Com a plataforma no ar, o dashboard do **Eureka (Discovery Server)** é a principal ferramenta para verificar a saúde do ecossistema de microservices.
+
+- **URL:** `http://localhost:8761`
+
+Ao acessá-lo, você pode ver a lista de todas as instâncias de serviços que estão ativas e registradas na plataforma, como o `TENANT-SERVICE`.
+
+### 6.2. Documentação de API (Swagger)
+
+Cada microserviço gera sua própria documentação interativa usando **Swagger UI**.
 
 - **Swagger UI (Tenant Service):** `http://localhost:8081/swagger-ui.html`
-- **Definição OpenAPI (Tenant Service):** `http://localhost:8081/v3/api-docs`
 
-A interface do Swagger UI é a maneira recomendada para explorar e testar os endpoints de cada API individualmente.
+Use a interface do Swagger para explorar e testar os endpoints de cada API individualmente.
 
-### 6.2. Coleção de Testes (Postman/Insomnia)
+### 6.3. Coleção de Testes (Postman/Insomnia)
 
-Para centralizar e simplificar os testes de integração, o projeto utiliza uma **única coleção geral** que abrange todos os endpoints da plataforma.
+Uma coleção centralizada do Postman/Insomnia para testes de integração está localizada na raiz do projeto (`postman_collection.json`). Ela contém requisições para todos os módulos, organizadas em pastas.
 
-- **Localização:** O arquivo `postman_collection.json` se encontra na raiz do projeto.
-- **Estrutura:** Dentro da coleção, as requisições estão organizadas em pastas que espelham a arquitetura dos serviços (`core`, `modules`, etc.), facilitando a localização dos endpoints desejados.
+> **Nota:** Ao adicionar ou modificar endpoints, lembre-se de atualizar esta coleção central.
 
-Para utilizar, basta importar o arquivo no seu cliente de API preferido (Postman, Insomnia, etc.).
+## 7\. Próximos Passos
 
-> **Nota:** Ao adicionar ou modificar endpoints, lembre-se de atualizar esta coleção central para manter a documentação e os testes consistentes para toda a equipe.
+Este é um projeto em evolução. Com a base de `Service Discovery` implementada, os próximos passos incluem:
 
-## 7\. Próximos Passos e Contribuição
-
-Este é um projeto em evolução. Os próximos passos incluem a implementação dos serviços planejados, começando pela infraestrutura (`discovery-server`, `config-server`) e o serviço de autenticação (`auth-service`).
+1.  Implementar o **`config-server`** para centralizar as configurações.
+2.  Implementar o **`auth-service`** para cuidar da autenticação e autorização.
+3.  Implementar o **`gateway`** como ponto de entrada único da API.
 
 Ao contribuir, por favor, siga os padrões de arquitetura e documentação já estabelecidos.

@@ -1,5 +1,3 @@
-# Arquivo docker-compose.yml SIMPLIFICADO para focar em estabilidade
-
 services:
   mongodb:
     image: mongo:latest
@@ -8,6 +6,8 @@ services:
       - "27017:27017"
     volumes:
       - mongo-data:/data/db
+    networks:
+      - plataforma-network
     healthcheck:
       test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
       interval: 10s
@@ -15,19 +15,39 @@ services:
       retries: 5
       start_period: 20s
 
+  discovery-server:
+    container_name: discovery-server
+    build:
+      context: .
+      dockerfile: ./infra/discovery-server/Dockerfile
+    ports:
+      - "8761:8761"
+    networks:
+      - plataforma-network
+    restart: on-failure
+
   tenantservice:
+    container_name: tenantservice
     build:
       context: .
       dockerfile: ./core/tenant-service/Dockerfile
-    container_name: tenantservice
     ports:
       - "8081:8081"
+    networks:
+      - plataforma-network
     depends_on:
       mongodb:
         condition: service_healthy
+      discovery-server:
+        condition: service_started # Espera o discovery iniciar
     environment:
       - SPRING_DATA_MONGODB_URI=mongodb://mongodb:27017/plataforma_db
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
     restart: on-failure
 
 volumes:
   mongo-data:
+
+networks:
+  plataforma-network:
+    driver: bridge
