@@ -1,8 +1,10 @@
 package com.plataforma.tenant_service.adapter.in.web;
 
 import com.plataforma.tenant_service.adapter.in.web.dto.CreateTenantRequest;
+import com.plataforma.tenant_service.adapter.in.web.mapper.TenantMapper;
 import com.plataforma.tenant_service.domain.model.Tenant;
 import com.plataforma.tenant_service.domain.port.in.TenantUseCase;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,19 +23,15 @@ public class TenantController {
     private static final Logger log = LoggerFactory.getLogger(TenantController.class);
 
     private final TenantUseCase tenantUseCase;
+    private final TenantMapper mapper;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Tenant createTenant(@RequestBody CreateTenantRequest request) {
+    public Tenant createTenant(@RequestBody @Valid CreateTenantRequest request) {
         // Log de INFO para marcar o início de uma operação de negócio importante.
         log.info("Recebida requisição para criar um novo tenant com nome: {}", request.name());
 
-        Tenant tenant = Tenant.builder()
-                .name(request.name())
-                .subscribedModules(request.subscribedModules())
-                .build();
-
-        Tenant createdTenant = tenantUseCase.createTenant(tenant);
+        Tenant createdTenant = tenantUseCase.createTenant(mapper.toTenant(request));
         log.info("Requisição para criar tenant finalizada. Tenant ID: {}", createdTenant.getId());
         return createdTenant;
     }
@@ -42,6 +40,7 @@ public class TenantController {
     public List<Tenant> getAllTenants() {
         log.info("Recebida requisição para listar todos os tenants.");
         List<Tenant> tenants = tenantUseCase.getAllTenants();
+
         log.info("Retornando {} tenants.", tenants.size());
         return tenants;
     }
@@ -49,17 +48,9 @@ public class TenantController {
     @GetMapping("/{id}")
     public ResponseEntity<Tenant> getTenantById(@PathVariable String id) {
         log.info("Recebida requisição para buscar tenant pelo ID: {}", id);
+        Tenant tenant = tenantUseCase.getTenantById(id);
 
-        return tenantUseCase.getTenantById(id)
-                .map(tenant -> {
-                    log.info("Tenant com ID {} encontrado.", id);
-                    return ResponseEntity.ok(tenant);
-                })
-                .orElseGet(() -> {
-                    // Log de WARN para uma situação comum, mas notável: um recurso não encontrado.
-                    log.warn("Tenant com ID {} não foi encontrado.", id);
-                    return ResponseEntity.notFound().build();
-                });
+        return ResponseEntity.ok(tenant);
     }
 
     @PutMapping("/{id}/modules")
