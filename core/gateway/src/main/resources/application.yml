@@ -17,8 +17,10 @@ spring:
         max-attempts: 30
         initial-interval: 2000
 
-# Endere\u00E7o do Eureka
+# Configurações do Eureka
 eureka:
   client:
     service-url:
       defaultZone: http://discovery-server:8761/eureka/
+  instance:
+    prefer-ip-address: true # Garante que o IP do contêiner seja registrado no Eureka

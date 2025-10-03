@@ -22,6 +22,12 @@ services:
       - "8761:8761"
     networks:
       - plataforma-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8761"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
     restart: on-failure
 
   config-server:
@@ -34,7 +40,14 @@ services:
     networks:
       - plataforma-network
     depends_on:
-      - discovery-server
+      discovery-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8888/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
     restart: on-failure
 
   gateway:
@@ -43,13 +56,35 @@ services:
       context: .
       dockerfile: ./core/gateway/Dockerfile
     ports:
-      # A porta 8080 é a única entrada para nossa API agora
       - "8080:8080"
     networks:
       - plataforma-network
     depends_on:
-      - discovery-server
-      - config-server
+      discovery-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+    restart: on-failure
+
+  auth-service:
+    container_name: auth-service
+    build:
+      context: .
+      dockerfile: ./core/auth-service/Dockerfile
+    ports:
+      - "8082:8082"
+    networks:
+      - plataforma-network
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      discovery-server:
+        condition: service_started
+      config-server:
+        condition: service_started
+    environment:
+      - SPRING_DATA_MONGODB_URI=mongodb://mongodb:27017/plataforma_auth_db
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
     restart: on-failure
 
   tenantservice:
@@ -63,9 +98,9 @@ services:
       mongodb:
         condition: service_healthy
       discovery-server:
-        condition: service_started
+        condition: service_healthy
       config-server:
-        condition: service_started
+        condition: service_healthy
     environment:
       - SPRING_DATA_MONGODB_URI=mongodb://mongodb:27017/plataforma_db
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/

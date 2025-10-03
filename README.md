@@ -1,9 +1,6 @@
 # Plataforma Multimodular SaaS
 
-[](https://www.google.com/search?q=%5Bhttps://github.com/actions%5D\(https://github.com/actions\))
-[](https://www.google.com/search?q=%5Bhttps://www.google.com/search%3Fq%3D./LICENSE%5D\(https://www.google.com/search%3Fq%3D./LICENSE\))
-
-Uma plataforma robusta e escalável, construída em Java com Spring Boot, projetada para servir como um software como serviço (SaaS) multitenant. A arquitetura é baseada em microservices e visa oferecer diferentes módulos de negócio para clientes distintos de forma isolada e segura.
+Uma plataforma robusta e escalável, construída em Java com Spring Boot e Spring Cloud, projetada para servir como um software como serviço (SaaS) multitenant. A arquitetura é baseada em microservices, orquestrada com Docker, e visa oferecer diferentes módulos de negócio para clientes distintos de forma isolada e segura.
 
 ## 1\. Visão Geral da Plataforma
 
@@ -11,8 +8,9 @@ O objetivo deste projeto é criar uma única plataforma base que possa atender a
 
 **Principais Conceitos:**
 
-- **Multitenancy:** Uma única instância da aplicação serve múltiplos clientes (tenants), com total isolamento de dados e funcionalidades.
-- **Modularidade:** As funcionalidades de negócio são encapsuladas em módulos independentes que podem ser "habilitados" para cada cliente de acordo com o plano contratado.
+- **Multitenancy:** Uma única instância da aplicação serve múltiplos clientes (tenants), com total isolamento de dados.
+- **Modularidade:** As funcionalidades de negócio são encapsuladas em módulos independentes que podem ser habilitados para cada cliente.
+- **Segurança Centralizada:** O acesso a todos os serviços de negócio é protegido e gerenciado de forma centralizada no API Gateway, usando autenticação baseada em Tokens JWT.
 
 ## 2\. Arquitetura da Plataforma
 
@@ -25,96 +23,87 @@ O diagrama abaixo ilustra a visão de alto nível dos principais serviços e com
 ```mermaid
 graph TD
     subgraph Cliente
-        U["Usuario Final (Navegador)"]
+        U["Usuário Final (Navegador/Postman)"]
     end
 
-    subgraph Plataforma_SaaS_Docker
-        G["API Gateway"]
+    subgraph "Plataforma SaaS (Docker Network)"
+        G["API Gateway (Porta 8080)"]
 
-        subgraph Servicos_de_Core
+        subgraph "Serviços de Core"
             AS["Auth Service"]
             TS["Tenant Service"]
         end
 
-        subgraph Modulos_de_Negocio
-            M1["Modulo Oficina"]
-            M2["Modulo Consultorio"]
-            M3["..."]
+        subgraph "Módulos de Negócio (Futuro)"
+            M1["Módulo A"]
+            M2["Módulo B"]
         end
 
-        subgraph Servicos_de_Infraestrutura
-            DS["Discovery Server"]
+        subgraph "Serviços de Infraestrutura"
+            DS["Discovery Server (Eureka)"]
             CS["Config Server"]
         end
 
-        subgraph Bancos_de_Dados
+        subgraph "Bancos de Dados"
+            DB_AS["MongoDB - Auth"]
             DB_TS["MongoDB - Tenants"]
-            DB_M1["DB do Modulo 1"]
-            DB_M2["DB do Modulo 2"]
         end
     end
 
-    %% Conexoes
-    U -- HTTPS --> G
+    %% Conexões
+    U -- "1. Requisição HTTP/S com ou sem Token" --> G
 
-    G --> AS
-    G --> TS
-    G --> M1
-    G --> M2
-    G --> M3
+    G -- "2. Roteia requisições públicas para" --> AS
+    G -- "4. Roteia requisições autenticadas para" --> TS
+    G -- "Roteia para" --> M1
+    G -- "Roteia para" --> M2
 
-    AS -- "Valida permissoes" --> TS
-    M1 -- "Consulta dados do Tenant" --> TS
+    AS -- "Valida credenciais em" --> DB_AS
+    TS -- "Manipula dados em" --> DB_TS
 
-    TS --> DB_TS
-    M1 --> DB_M1
-    M2 --> DB_M2
-
+    G -- "3. Valida Token JWT" --> G
+    
+    G -- "Descobre serviços via" --> DS
     AS -- "Registra-se em" --> DS
     TS -- "Registra-se em" --> DS
-    M1 -- "Registra-se em" --> DS
-    G -- "Registra-se em" --> DS
     CS -- "Registra-se em" --> DS
 
-    AS -- "Busca configuracoes de" --> CS
-    TS -- "Busca configuracoes de" --> CS
-    M1 -- "Busca configuracoes de" --> CS
-    G -- "Busca configuracoes de" --> CS
+    G -- "Busca configurações de" --> CS
+    AS -- "Busca configurações de" --> CS
+    TS -- "Busca configurações de" --> CS
 ```
 
 ## 3\. Estrutura de Módulos e Serviços
 
-O repositório está organizado em três pastas principais que agrupam os serviços por responsabilidade:
+O repositório está organizado em três pastas principais:
 
 ### 📁 `core/` - Serviços Essenciais
 
-| Serviço | Responsabilidade | Status |
-| :--- | :--- |:--- |
-| **`gateway`** | Ponto de entrada único para todas as requisições. Roteia, aplica filtros e agrega respostas usando **Spring Cloud Gateway**. | ✅ **Implementado** |
-| **`tenant-service`** | Gerencia os clientes (tenants) e os módulos que eles assinam. | ✅ **Implementado** |
-| **`auth-service`** | Cuida da autenticação (login/senha) e autorização (tokens JWT). | 📝 Planejado |
+| Serviço            | Responsabilidade                                                                                     | Status            |
+| :----------------- | :--------------------------------------------------------------------------------------------------- | :---------------- |
+| **`gateway`** | Ponto de entrada único. Roteia o tráfego e **impõe a segurança**, validando tokens JWT.               | ✅ **Implementado** |
+| **`auth-service`** | Gerencia usuários, senhas, e **emite os tokens JWT** após uma autenticação bem-sucedida.              | ✅ **Implementado** |
+| **`tenant-service`** | Gerencia os clientes (tenants) e os módulos que eles assinam. (Serviço de exemplo protegido).       | ✅ **Implementado** |
 
 ### 📁 `infra/` - Serviços de Infraestrutura
 
-| Serviço | Responsabilidade | Status |
-| :--- | :--- |:--- |
+| Serviço              | Responsabilidade                                                                      | Status            |
+| :------------------- | :------------------------------------------------------------------------------------ | :---------------- |
 | **`discovery-server`** | Permite que os serviços se encontrem dinamicamente na rede, usando **Netflix Eureka**. | ✅ **Implementado** |
-| **`config-server`** | Centraliza as configurações de todos os microservices a partir de um repositório Git, usando **Spring Cloud Config**. | ✅ **Implementado** |
+| **`config-server`** | Centraliza as configurações de todos os microservices a partir de um repositório Git.  | ✅ **Implementado** |
 
 ### 📁 `modules/` - Módulos de Negócio
 
-| Serviço | Responsabilidade | Status |
-| :--- | :--- |:--- |
-| **`mod-oficina`** | Exemplo de módulo para gerenciamento de uma oficina. | 📝 Planejado |
-| **`mod-consultorio`** | Exemplo de módulo para agendamentos em um consultório. | 📝 Planejado |
+| Serviço             | Responsabilidade                                              | Status      |
+| :------------------ | :------------------------------------------------------------ | :---------- |
+| **`mod-oficina`** | Exemplo de módulo para gerenciamento de uma oficina.          | 📝 Planejado |
+| **`mod-consultorio`** | Exemplo de módulo para agendamentos em um consultório.        | 📝 Planejado |
 
 ## 4\. Arquitetura do Serviço Individual
 
 Todos os serviços seguem o padrão de **Arquitetura Hexagonal (Portas e Adaptadores)** para isolar a lógica de negócio de detalhes de infraestrutura. Para mais detalhes, consulte o `README.md` de cada serviço.
 
 ## 5\. Ambiente de Desenvolvimento com Docker
-
-Toda a plataforma é orquestrada com Docker e Docker Compose para um ambiente de desenvolvimento consistente.
 
 ### 5.1. Pré-requisitos
 
@@ -130,84 +119,68 @@ Toda a plataforma é orquestrada com Docker e Docker Compose para um ambiente de
     ```bash
     docker-compose up --build
     ```
-3.  O comando irá construir e iniciar todos os contêineres em ordem de dependência.
+3.  O comando irá construir e iniciar todos os contêineres. Aguarde até que todos os serviços estejam saudáveis (healthy) antes de iniciar os testes.
 
-### 5.3. Acesso à Plataforma
+### 5.3. Acesso à Plataforma e Ferramentas
 
-Após a execução, **toda a interação com a plataforma deve ser feita através do API Gateway**. Os dashboards de infraestrutura também podem ser acessados diretamente.
+Toda a interação com a plataforma deve ser feita através do API Gateway. Os dashboards de infraestrutura podem ser acessados diretamente.
 
-| Ponto de Acesso      | URL de Acesso          | Descrição                                                                               |
-| :------------------- | :--------------------- | :-------------------------------------------------------------------------------------- |
-| **API Gateway** | `http://localhost:8080`  | **Ponto de entrada principal.** Todas as chamadas de API devem ser direcionadas para cá. |
-| **Discovery Server** | `http://localhost:8761`  | Dashboard do Eureka para monitorar os serviços registrados.                               |
-| **Config Server** | `http://localhost:8888`  | API do Servidor de Configuração para inspecionar as propriedades servidas.                |
+| Ponto de Acesso      | URL de Acesso               | Descrição                                                                      |
+| :------------------- | :-------------------------- | :----------------------------------------------------------------------------- |
+| **API Gateway** | `http://localhost:8080`     | **Ponto de entrada principal.** Todas as chamadas de API devem passar por aqui.      |
+| **Discovery Server** | `http://localhost:8761`     | Dashboard do Eureka para monitorar os serviços registrados.                      |
+| **Config Server** | `http://localhost:8888`     | API para inspecionar as configurações servidas pelo Config Server.             |
+| **Auth Service** | `http://localhost:8082`     | Acesso direto ao Auth Service (para debug, mas o ideal é usar o Gateway).       |
 
-## 6\. Documentação e Monitoramento
+## 6\. Guia de Exploração e Testes
 
 Esta seção serve como um guia prático para explorar e interagir com os componentes da plataforma.
 
-### 6.1. Ponto de Entrada: API Gateway
+### 6.1. Monitoramento de Serviços (Eureka Dashboard)
 
-O `API Gateway` na porta `8080` é o único ponto de contato com o exterior. Ele roteia as requisições para os serviços internos com base no caminho da URL.
-
-**Principais Rotas Mapeadas:**
-
-| Rota no Gateway | Serviço de Destino | Exemplo de Acesso (Método GET) |
-| :--- | :--- | :--- |
-| `/api/v1/tenants/**` | `tenant-service` | [`http://localhost:8080/api/v1/tenants`](https://www.google.com/search?q=http://localhost:8080/api/v1/tenants) |
-
-### 6.2. Monitoramento de Serviços (Eureka Dashboard)
-
-O dashboard do **Eureka** é a principal ferramenta para verificar a saúde do ecossistema.
+Acesse o dashboard do **Eureka** para verificar a saúde do ecossistema.
 
 - **URL:** [**http://localhost:8761**](https://www.google.com/search?q=http://localhost:8761)
 
-**O que procurar:** Dentro do dashboard, na seção `Instances currently registered with Eureka`, você encontrará os seguintes serviços com o status `UP`:
+**O que procurar:** Na seção `Instances currently registered with Eureka`, você deve encontrar todos os serviços com o status `UP`:
 
-- `TENANT-SERVICE`
+- `AUTH-SERVICE`
 - `CONFIG-SERVER`
+- `DISCOVERY-SERVER` (geralmente não se registra, mas pode aparecer)
 - `GATEWAY`
+- `TENANT-SERVICE`
 
-### 6.3. Configuração Centralizada (Config Server)
+### 6.2. Configuração Centralizada (Config Server)
 
-As configurações são versionadas em um [repositório Git dedicado](https://github.com/Augusto-Lucas-Sistemas/plataforma-config) e servidas pelo **Spring Cloud Config**. Você pode inspecionar as configurações que cada serviço está recebendo.
+As configurações são versionadas no [repositório `plataforma-config`](https://www.google.com/search?q=%5Bhttps://github.com/Augusto-Lucas-Sistemas/plataforma-config%5D\(https://github.com/Augusto-Lucas-Sistemas/plataforma-config\)) e servidas pelo **Spring Cloud Config**. Você pode inspecionar as configurações que cada serviço está recebendo:
 
-**Inspeção de Configurações por Serviço:**
-
-| Serviço | URL para Inspeção do Profile `default` |
-| :--- | :--- |
-| `gateway` | [`http://localhost:8888/gateway/default`](https://www.google.com/search?q=http://localhost:8888/gateway/default) |
+| Serviço          | URL para Inspeção do Profile `default`                                |
+| :--------------- | :-------------------------------------------------------------------- |
+| `auth-service`   | [`http://localhost:8888/auth-service/default`](https://www.google.com/search?q=http://localhost:8888/auth-service/default) |
+| `gateway`        | [`http://localhost:8888/gateway/default`](https://www.google.com/search?q=http://localhost:8888/gateway/default)         |
 | `tenant-service` | [`http://localhost:8888/tenant-service/default`](https://www.google.com/search?q=http://localhost:8888/tenant-service/default) |
-| `discovery-server` | [`http://localhost:8888/discovery-server/default`](https://www.google.com/search?q=http://localhost:8888/discovery-server/default) |
 
-### 6.4. Documentação e Testes de API
+### 6.3. Documentação e Testes de API
 
-Para interagir e testar a API, utilize as ferramentas abaixo. Lembre-se que todas as chamadas devem passar pelo Gateway.
-
-#### Coleção do Postman/Insomnia
-
-O projeto inclui uma coleção centralizada para facilitar os testes.
+A forma mais fácil de testar é usando a coleção automatizada para Postman/Insomnia.
 
 - **Arquivo:** `postman_collection.json` (localizado na raiz do projeto).
-- **Uso:** Importe este arquivo no seu cliente de API. A variável `baseUrl` já está pré-configurada para `http://localhost:8080`.
+- **Uso:** Importe este arquivo. Ele contém um fluxo de trabalho automatizado:
+    1.  Execute a requisição **"Auth Service \> 1. Registrar Novo Usuário"**.
+    2.  Execute **"Auth Service \> 2. Autenticar (Login)"**. O token JWT será salvo automaticamente.
+    3.  Agora você pode executar qualquer rota protegida, como **"Tenant Service \> 2. Listar Todos os Tenants"**, e o token será enviado.
 
-**Principais Endpoints de Exemplo (via Gateway):**
+#### Acesso à Documentação Swagger
 
-| Método | Endpoint no Gateway | Descrição |
-| :--- | :--- | :--- |
-| `GET` | `/api/v1/tenants` | Lista todos os tenants. |
-| `POST` | `/api/v1/tenants` | Cria um novo tenant (veja `body` na coleção). |
+A documentação interativa de cada serviço pode ser acessada através das rotas do Gateway:
 
-#### Swagger UI
-
-A documentação interativa de cada serviço pode ser acessada através das rotas do Gateway. A configuração para uma interface unificada será adicionada futuramente.
+- **Auth Service:** [`http://localhost:8080/auth/swagger-ui.html`](https://www.google.com/search?q=http://localhost:8080/auth/swagger-ui.html)
+- **Tenant Service:** [`http://localhost:8080/api/v1/tenants/swagger-ui.html`](https://www.google.com/search?q=http://localhost:8080/api/v1/tenants/swagger-ui.html)
 
 ## 7\. Próximos Passos
 
-Com a infraestrutura de base (Service Discovery, Config Server e API Gateway) implementada, o próximo passo é focar na segurança:
+Com a infraestrutura e a segurança de base implementadas, os próximos passos são:
 
-1.  Implementar o **`auth-service`** para gerenciar autenticação e autorização com JWT.
-2.  Integrar o `auth-service` ao `gateway` para proteger os endpoints.
-3.  Expandir as funcionalidades dos serviços de negócio (ex: `tenant-service`).
-
-Ao contribuir, por favor, siga os padrões de arquitetura e documentação já estabelecidos.
+1.  **Refinar Autorização:** Implementar lógica baseada em `Roles` (ex: apenas `ROLE_ADMIN` pode listar todos os usuários).
+2.  **Construir Módulos de Negócio:** Começar a desenvolver os `modules/`, como o `mod-oficina`, seguindo o padrão já estabelecido.
+3.  **Adicionar Logging/Tracing Distribuído:** Integrar ferramentas como OpenTelemetry ou Micrometer Tracing para monitorar requisições através de múltiplos serviços.

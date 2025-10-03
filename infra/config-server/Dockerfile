@@ -6,9 +6,11 @@ RUN mvn clean install -DskipTests
 
 # Estágio 2: Runtime
 FROM eclipse-temurin:21-jre
+
+# Instala o curl para uso no healthcheck do Docker Compose
+RUN apt-get update && apt-get install -y curl
+
 WORKDIR /app
-# Copia o JAR com nome fixo 'app.jar', que foi configurado no POM pai
 COPY --from=build /app/infra/config-server/target/app.jar app.jar
-# Expõe a porta padrão do Config Server
 EXPOSE 8888
 ENTRYPOINT ["java", "-jar", "app.jar"]

@@ -1,28 +1,150 @@
 {
   "info": {
-    "_postman_id": "7bf94d10-6d3e-4558-a971-aa83969e141c",
-    "name": "Plataforma Multimodular",
-    "description": "Coleção de testes para a plataforma multimodular, incluindo todos os seus microservices.",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_exporter_id": "7592330"
+    "_postman_id": "c8b5b4a5-2e8c-4f3a-9b8e-1e6e1d8a3b2c",
+    "name": "Plataforma Multimodular SaaS",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
     {
-      "name": "Tenant Service",
+      "name": "Auth Service",
+      "description": "Endpoints para autenticação e gerenciamento de usuários.",
       "item": [
         {
-          "name": "Criar Novo Tenant",
+          "name": "1. Registrar Novo Usuário",
           "request": {
             "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
+            "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"name\": \"Clínica Vet Mais Vida\",\n    \"contactEmail\": \"contato@vetmaisvida.com\",\n    \"subscribedModules\": [\n        \"mod-agendamento\",\n        \"mod-pets\"\n    ]\n}",
+              "raw": "{\n    \"email\": \"admin@admin.com\",\n    \"password\": \"admin123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Cria um novo usuário na plataforma. A senha deve ter no mínimo 8 caracteres."
+          },
+          "response": []
+        },
+        {
+          "name": "2. Autenticar (Login)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Captura o token da resposta e o salva na variável da coleção.",
+                  "const token = pm.response.text();",
+                  "pm.collectionVariables.set(\"jwtToken\", token);",
+                  "console.log(\"Token JWT salvo com sucesso!\");"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"admin@admin.com\",\n    \"password\": \"admin123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Autentica um usuário e retorna um token JWT. O script salva automaticamente o token na variável `jwtToken` da coleção."
+          },
+          "response": []
+        },
+        {
+          "name": "3. Listar Usuários (Protegido)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "users"
+              ]
+            },
+            "description": "Lista todos os usuários cadastrados. Requer um token JWT válido."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Tenant Service (Requer Autenticação)",
+      "item": [
+        {
+          "name": "1. Criar Novo Tenant",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Captura o ID do tenant criado e salva na variável da coleção.",
+                  "const jsonData = pm.response.json();",
+                  "pm.collectionVariables.set(\"tenantId\", jsonData.id);",
+                  "console.log(\"ID do novo tenant salvo com sucesso: \" + jsonData.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Empresa Teste via Postman\",\n    \"contactEmail\": \"contato@postman.com\",\n    \"subscribedModules\": [\n        \"mod-financeiro\"\n    ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -40,13 +162,23 @@
                 "tenants"
               ]
             },
-            "description": "Cria um novo tenant na plataforma. O status será definido como `ACTIVE` por padrão e as datas de criação/atualização serão geradas automaticamente."
+            "description": "Cria um novo tenant. Requer um token JWT válido. O ID do tenant criado é salvo automaticamente na variável `tenantId`."
           },
           "response": []
         },
         {
-          "name": "Listar Todos os Tenants",
+          "name": "2. Listar Todos os Tenants",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "GET",
             "header": [],
             "url": {
@@ -60,13 +192,23 @@
                 "tenants"
               ]
             },
-            "description": "Retorna uma lista com todos os tenants cadastrados no sistema."
+            "description": "Retorna uma lista com todos os tenants. Requer um token JWT válido."
           },
           "response": []
         },
         {
-          "name": "Buscar Tenant por ID",
+          "name": "3. Buscar Tenant por ID",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "GET",
             "header": [],
             "url": {
@@ -81,20 +223,25 @@
                 "{{tenantId}}"
               ]
             },
-            "description": "Busca um tenant específico pelo seu ID.\n\n**Como usar:**\n1. Crie ou liste os tenants para obter um `id` válido.\n2. Cole o ID diretamente na URL ou configure a variável `tenantId`."
+            "description": "Busca um tenant específico pelo seu ID. O ID é pego automaticamente da variável `tenantId` após a criação de um novo tenant."
           },
           "response": []
         },
         {
-          "name": "Adicionar Módulo a um Tenant",
+          "name": "4. Adicionar Módulo a um Tenant",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
+            "header": [],
             "body": {
               "mode": "raw",
               "raw": "{\n    \"moduleName\": \"mod-estoque\"\n}",
@@ -117,13 +264,23 @@
                 "modules"
               ]
             },
-            "description": "Adiciona um novo módulo à lista de módulos assinados por um tenant específico."
+            "description": "Adiciona um novo módulo a um tenant. O ID é pego automaticamente da variável `tenantId`."
           },
           "response": []
         },
         {
-          "name": "Deletar Tenant",
+          "name": "5. Deletar Tenant",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "DELETE",
             "header": [],
             "url": {
@@ -138,18 +295,25 @@
                 "{{tenantId}}"
               ]
             },
-            "description": "Deleta um tenant do sistema usando o seu ID."
+            "description": "Deleta um tenant. O ID é pego automaticamente da variável `tenantId`."
           },
           "response": []
         }
-      ],
-      "description": "Endpoints relacionados ao gerenciamento de Tenants (clientes) da plataforma."
+      ]
     }
   ],
   "variable": [
     {
       "key": "baseUrl",
       "value": "http://localhost:8080"
+    },
+    {
+      "key": "jwtToken",
+      "value": ""
+    },
+    {
+      "key": "tenantId",
+      "value": ""
     }
   ]
 }
