@@ -1,94 +1,72 @@
 # Core: API Gateway
 
-Este serviço é o **ponto de entrada único (Single Point of Entry)** para a Plataforma Multimodular SaaS. Implementado com **Spring Cloud Gateway**, ele atua como a fachada principal, recebendo todas as requisições externas e roteando-as de forma inteligente para os microservices internos apropriados.
+Este serviço é o **ponto de entrada único (Single Point of Entry)** e a **primeira linha de defesa de segurança** para a Plataforma Multimodular SaaS. Implementado com **Spring Cloud Gateway** e integrado com **Spring Security**, ele atua como a fachada principal, recebendo todas as requisições externas, validando credenciais de acesso (Tokens JWT) e roteando as chamadas válidas para os microservices internos apropriados.
 
-## 1\. O Papel do API Gateway na Arquitetura
+## 1. O Papel do API Gateway na Arquitetura
 
-Pense no API Gateway como o **porteiro ou a recepcionista de um grande prédio comercial**. Em vez de um visitante (o cliente da API) precisar saber o andar e a sala de cada empresa (cada microserviço), ele se dirige a um único local — a recepção. A recepcionista então o direciona para o lugar certo.
+Pense no API Gateway como o **segurança na porta de um evento exclusivo**. Ele não apenas direciona os convidados (`roteamento`), mas primeiro verifica se eles têm um ingresso válido (`segurança`).
 
 As principais responsabilidades do Gateway são:
 
-* **Ponto de Entrada Único:** Clientes externos (como um frontend web ou mobile) se comunicam apenas com o Gateway (ex: `http://localhost:8080`). Eles não precisam conhecer os endereços dos serviços internos.
-* **Roteamento Dinâmico:** O Gateway usa o `Discovery Server` (Eureka) para saber onde os outros serviços estão. Ele encaminha as requisições com base em regras (predicados), como o caminho da URL.
-* **Fachada Simplificada:** Ele pode simplificar APIs complexas, orquestrando chamadas para múltiplos serviços internos e retornando uma resposta agregada.
-* **Centralização de Lógica Transversal:** É o local ideal para centralizar funcionalidades que se aplicam a todas as requisições, como:
-    * **Segurança:** (Próximo passo) Validar tokens de autenticação (JWT) antes de permitir que uma requisição prossiga.
-    * **Rate Limiting:** Limitar o número de requisições por cliente.
-    * **Logging e Monitoramento:** Criar um log centralizado de todo o tráfego que entra na plataforma.
+* **Ponto de Entrada Único:** Clientes externos se comunicam apenas com o Gateway (`http://localhost:8080`), simplificando a arquitetura do frontend.
+* **Roteamento Dinâmico:** Usa o `Discovery Server` (Eureka) para encontrar os serviços internos e encaminhar as requisições com base nas regras de rota definidas no `gateway.yml`.
+* **Centralização da Segurança:** É o local ideal para centralizar funcionalidades que se aplicam a todas as requisições, como:
+    * **Autenticação e Autorização:** Utilizando um `SecurityWebFilterChain` global, ele intercepta todas as requisições, valida os tokens JWT e bloqueia o acesso a rotas protegidas caso o token seja inválido ou inexistente.
+    * **Rate Limiting:** (Futuro) Limitar o número de requisições por cliente.
+    * **Logging e Monitoramento:** (Futuro) Criar um log centralizado de todo o tráfego.
 
-## 2\. Como Funciona o Roteamento
+## 2. Fluxo de uma Requisição Segura
 
-O roteamento é a principal função do Gateway. O fluxo de uma requisição é o seguinte:
+Com a segurança implementada, o fluxo de uma requisição para uma rota protegida (ex: `/api/v1/tenants`) é o seguinte:
 
-1.  Um cliente (ex: Postman) faz uma chamada para `GET http://localhost:8080/api/v1/tenants`.
-2.  O **Gateway** recebe esta requisição na porta `8080`.
-3.  Ele consulta suas regras de roteamento, que foram carregadas do **Config Server**.
-4.  Ele encontra uma regra que corresponde ao padrão do caminho: `Path=/api/v1/tenants/**`.
-5.  A regra diz para encaminhar a requisição para o serviço `uri: lb://TENANT-SERVICE`.
-    * O prefixo `lb://` instrui o Gateway a usar o **Load Balancer** integrado com o **Discovery Server (Eureka)** para encontrar o endereço de um serviço chamado `TENANT-SERVICE`.
-6.  O Gateway pergunta ao Eureka: "Onde está o `TENANT-SERVICE`?". O Eureka responde com o endereço de rede interno do contêiner (ex: `172.18.0.5:8081`).
-7.  O Gateway, então, repassa a requisição original para o `tenant-service` nesse endereço.
-8.  O `tenant-service` processa a requisição, retorna a resposta ao Gateway, que por sua vez a entrega ao cliente original.
+1.  Um cliente (ex: Postman) envia a requisição para `GET http://localhost:8080/api/v1/tenants`, incluindo o token no cabeçalho: `Authorization: Bearer <token_jwt>`.
+2.  O **Gateway** recebe a chamada.
+3.  O `SecurityWebFilterChain` (da nossa `SecurityConfig`) é o primeiro a atuar. Ele verifica a rota:
+    * Se a rota for pública (ex: `/auth/login`), ele libera a passagem.
+    * Se a rota for privada (nosso caso), ele aciona o `SecurityContextRepository`.
+4.  O `SecurityContextRepository` extrai o token "Bearer" do cabeçalho.
+5.  Ele passa o token para o `AuthenticationManager` reativo.
+6.  O `AuthenticationManager` usa o `JwtService` para **validar o token**: verifica a assinatura com a chave secreta (`jwt.secret`) e a data de expiração.
+7.  **Decisão de Segurança:**
+    * **Token Válido:** A requisição é considerada autenticada. O fluxo continua.
+    * **Token Inválido/Ausente:** O Gateway **bloqueia a requisição** e retorna `401 Unauthorized` imediatamente. O `tenant-service` nunca é acionado.
+8.  **Roteamento:** Com a segurança validada, o Gateway consulta suas regras de rota (do `gateway.yml`), encontra o `tenant-service` no Eureka e encaminha a requisição.
 
-## 3\. Detalhes Técnicos
+## 3. Detalhes Técnicos
 
 ### 3.1. Tecnologias Utilizadas
 
 * **Java 21** (LTS)
 * **Spring Boot 3.2.5**
-* **Spring Cloud 2023.0.1**
-* **Spring Cloud Gateway**: Baseado em um stack não-bloqueante (Project Reactor, Netty) para alta performance.
-* **Spring Cloud Config Client**: Para consumir suas configurações (rotas) do `config-server`.
-* **Spring Cloud Netflix Eureka Client**: Para se registrar e descobrir outros serviços.
+* **Spring Cloud Gateway**: Para roteamento reativo.
+* **Spring Security (WebFlux)**: Para a camada de segurança reativa.
+* **JJWT**: Biblioteca para parse e validação de JSON Web Tokens.
+* **Spring Cloud Config Client** e **Eureka Discovery Client**: Para integração com a infraestrutura.
 
-### 3.2. Configuração de Rotas
+### 3.2. Configuração
 
-As regras de roteamento do Gateway **não estão neste projeto**. Elas são gerenciadas externamente no repositório `plataforma-config`, dentro do arquivo `gateway.yml`. Isso nos dá a flexibilidade de alterar o roteamento da plataforma sem precisar fazer um novo deploy do Gateway.
+As configurações críticas deste serviço são gerenciadas no `plataforma-config`:
 
-**Exemplo (`plataforma-config/gateway.yml`):**
+* **`gateway.yml`**: Define as regras de roteamento (`routes`) e a chave secreta do JWT (`jwt.secret`), que **deve ser idêntica** à do `auth-service`. As regras de filtro (`- AuthenticationFilter`) foram removidas em favor da segurança global via Spring Security.
+* **`SecurityConfig.java`**: Arquivo de configuração que define o `SecurityWebFilterChain`, estabelecendo quais rotas são públicas (`/auth/**`) e quais são protegidas.
 
-```yaml
-spring:
-  cloud:
-    gateway:
-      routes:
-        # Rota para o Tenant Service
-        - id: tenant_service_route
-          uri: lb://TENANT-SERVICE
-          predicates:
-            - Path=/api/v1/tenants/**
-```
-
-* **`id`**: Um nome único para a rota.
-* **`uri`**: O destino da requisição. `lb://` indica que o nome a seguir (`TENANT-SERVICE`) deve ser resolvido via Discovery Server.
-* **`predicates`**: As condições para que a rota seja ativada. `Path` é a mais comum, baseada no caminho da URL.
-
-## 4\. Como Executar
+## 4. Como Executar
 
 ### 4.1. Como Parte da Plataforma (Modo Padrão)
 
 A forma recomendada é iniciar toda a plataforma usando o Docker Compose a partir da **raiz do projeto**.
 
 ```bash
-# Na pasta raiz (plataforma/)
 docker-compose up --build
+
 ```
 
-Este comando irá construir a imagem do `gateway` e iniciá-lo em orquestração com os outros serviços.
-
 ### 4.2. De Forma Isolada (Para Debug)
+1. Certifique-se de que as dependências (discovery-server, config-server) estejam rodando.
 
-Para depurar ou desenvolver especificamente este serviço, você pode executá-lo diretamente pela sua IDE.
+```bash
+docker-compose up -d discovery-server config-server
+```
+2. Na sua IDE, execute a classe principal GatewayApplication.java.
 
-1.  Abra o projeto `plataforma` na sua IDE (ex: IntelliJ).
-2.  **Importante:** Este serviço depende do `Discovery Server` e do `Config Server`. Antes de prosseguir, certifique-se de que eles estejam rodando.
-    ```bash
-    # Na raiz do projeto, inicie apenas as dependências de infraestrutura
-    docker-compose up -d discovery-server config-server
-    ```
-3.  Com as dependências no ar, encontre e execute a classe principal `GatewayApplication.java`.
-4.  O serviço estará disponível em `http://localhost:8080`.
-
-## 5\. Próximos Passos para este Serviço
-
-O próximo grande passo para o Gateway será a implementação de **filtros de segurança globais** para validar tokens de autenticação (JWT) em conjunto com o futuro `auth-service`.
+3. O serviço estará disponível em http://localhost:8080.

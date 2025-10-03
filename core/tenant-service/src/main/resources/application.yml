@@ -23,3 +23,5 @@ eureka:
       defaultZone: http://discovery-server:8761/eureka/
     initial-instance-info-replication-interval-seconds: 5
     instance-info-replication-interval-seconds: 10
+  instance:
+    prefer-ip-address: true # Garante que o IP do contêiner seja registrado no Eureka
